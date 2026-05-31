@@ -113,7 +113,7 @@
   <Project Path="Unity.2D.Tilemap.Extras.csproj" />
   <Project Path="Unity.2D.Animation.Runtime.csproj" />
   <Project Path="Unity.AI.Assistant.AssetGenerators.Editor.csproj" />
-  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="DOTween.Modules.csproj" />
   <Project Path="Unity.Entities.Editor.Properties.csproj" />
   <Project Path="Unity.Entities.UI.csproj" />
   <Project Path="UniTask.TextMeshPro.csproj" />
@@ -144,12 +144,13 @@
   <Project Path="Unity.SurfaceCache.Runtime.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
-  <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
+  <Project Path="DOTweenPro.EditorScripts.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
   <Project Path="Unity.Core.Editor.csproj" />
   <Project Path="Unity.Mathematics.Extensions.csproj" />
   <Project Path="R3.Unity.Editor.csproj" />
+  <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.PathTracing.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Bridge.Editor.csproj" />
   <Project Path="Unity.Entities.Graphics.Editor.csproj" />
