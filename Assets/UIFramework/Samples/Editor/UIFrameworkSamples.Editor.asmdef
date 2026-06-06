@@ -1,0 +1,21 @@
+{
+    "name": "Sinkii09.UIFramework.Samples.Editor",
+    "rootNamespace": "UIFrameworkSamples.Editor",
+    "references": [
+        "Sinkii09.UIFramework",
+        "Sinkii09.UIFramework.Samples",
+        "Unity.TextMeshPro.Editor",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

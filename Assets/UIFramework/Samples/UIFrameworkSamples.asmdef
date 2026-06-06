@@ -1,0 +1,20 @@
+{
+    "name": "Sinkii09.UIFramework.Samples",
+    "rootNamespace": "UIFrameworkSamples",
+    "references": [
+        "Sinkii09.UIFramework",
+        "UniTask",
+        "R3.Unity",
+        "VContainer",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
