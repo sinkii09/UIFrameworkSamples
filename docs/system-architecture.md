@@ -2,7 +2,7 @@
 
 ## High-Level Overview
 
-The UIFramework is a Unity package that provides a declarative UI system built on reactive programming (R3), dependency injection (VContainer), and async support (UniTask). The installer wizard automates the setup process by configuring dependencies and creating essential assets.
+The UIFramework is a Unity package that provides a declarative UI system built on reactive programming (R3), dependency injection (VContainer), and async support (UniTask). The Memory Flip Card Game is a sample implementation demonstrating full MVVM + state machine integration.
 
 ## Dependency Resolution Architecture
 
@@ -113,3 +113,68 @@ UIFramework (this package)
 - **Type lookups:** Use assembly scanning (AppDomain) to detect DOTween and UIFrameworkConfig types
 - **Array searches:** Bounded to 40-char window to prevent mis-parsing malformed JSON
 - **Folder creation:** Idempotent — safe to call multiple times
+
+## Memory Flip Card Game State Integration
+
+The Memory Game demonstrates full UIFramework integration as a game state within the state machine lifecycle.
+
+### State Flow
+
+```
+GameLifecycleManager (IAsyncStartable entry point)
+    │
+    ├─ BootState → LoadingState → MemoryGameState (registered in UIStateMachine)
+    │
+MemoryGameState (IGameState)
+    │
+    ├─ OnEnterAsync() → UINavigator.ShowAsync<GameplayView>()
+    │   └─ Creates GameplayViewModel scope
+    │   └─ Loads & initializes CardView prefab instances
+    │   └─ DOTween animates cards into view
+    │
+    ├─ GameplayView interaction → GameplayViewModel ReactiveProperties update
+    │   └─ Flips tracked in MemoryCardGame (pure logic)
+    │   └─ R3 bindings update CardView visual state
+    │
+    ├─ Win condition detected (IsComplete)
+    │   └─ GameplayViewModel signals win
+    │   └─ UINavigator navigates: GameplayView → WinView
+    │   └─ WinView shows final stats (moves, time)
+    │
+    └─ OnExitAsync() → UINavigator.CloseAllAsync()
+        └─ Teardown all views; dispose scopes
+
+```
+
+### Key Components
+
+| Component | Type | Responsibility |
+|---|---|---|
+| `MemoryGameState` | IGameState | Entry/exit point; manages show/hide of gameplay |
+| `MemoryCardGame` | C# class (no MonoBehaviour) | Pure game rules: shuffle, flip, match detection |
+| `GameplayViewModel` | ViewModelBase | Reactive state: card visibility, game progress |
+| `GameplayView` | UIView<GameplayViewModel> | Board layout; spawns CardView instances |
+| `CardView` | UIView (child item) | Single card; handles tap input, flip animation |
+| `WinViewModel` | ViewModelBase | Win screen state: move count, elapsed time |
+| `WinView` | UIView<WinViewModel> | Win screen UI |
+
+### Dependency Injection
+
+MemoryGameState is registered via `SampleLifetimeScope.ConfigureContainer()`:
+```csharp
+builder.Register<IGameState, MemoryGameState>();
+```
+
+On state transition, VContainer resolves and injects `IUINavigator` dependency.
+
+### Flow Example: User Taps Card
+
+1. **CardView.OnCardTapped()** → calls `MemoryCardGame.TryFlip(cardId)`
+2. **MemoryCardGame** evaluates flip (lock, matched, already flipped) → returns FlipResult
+3. **GameplayViewModel** listens to `MemoryCardGame.OnMatchFound` event
+4. **ReactiveProperty<bool>** updates (card visibility toggle)
+5. **R3 binding** in CardView observes change → calls `CardView.ShowFlip()`
+6. **DOTween animation** (flip sequence) plays
+7. If win condition (`IsComplete`) → **GameplayViewModel** triggers next state show
+
+This pattern separates concerns: game logic in pure C#, state in ViewModel, animations in View.

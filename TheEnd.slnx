@@ -61,6 +61,7 @@
   <Project Path="UniTask.Linq.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.csproj" />
   <Project Path="glTFast.Export.csproj" />
+  <Project Path="UIFramework.MemoryGame.Editor.csproj" />
   <Project Path="Unity.AppUI.Navigation.Editor.csproj" />
   <Project Path="PsdPlugin.csproj" />
   <Project Path="Unity.Serialization.csproj" />
@@ -75,7 +76,6 @@
   <Project Path="Unity.Entities.Editor.csproj" />
   <Project Path="MoreMountains.Tools.Editor.csproj" />
   <Project Path="Unity.InternalAPIEditorBridge.001.csproj" />
-  <Project Path="Sinkii09.UIFramework.Samples.csproj" />
   <Project Path="HFDownloader.csproj" />
   <Project Path="Unity.InternalAPIEditorBridge.002.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
@@ -123,6 +123,7 @@
   <Project Path="Unity.2D.IK.Runtime.csproj" />
   <Project Path="Unity.Addressables.csproj" />
   <Project Path="Unity.AI.Assistant.Annotations.Editor.csproj" />
+  <Project Path="UIFramework.MemoryGame.csproj" />
   <Project Path="Unity.AppUI.Editor.csproj" />
   <Project Path="Unity.PathTracing.Runtime.csproj" />
   <Project Path="Unity.AI.Generators.UI.AIDropdownIntegrations.csproj" />
@@ -198,7 +199,6 @@
   <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />
   <Project Path="Unity.InferenceEngine.MacBLAS.csproj" />
   <Project Path="Unity.InferenceEngine.ONNX.Editor.csproj" />
-  <Project Path="Sinkii09.UIFramework.Samples.Editor.csproj" />
   <Project Path="Unity.InferenceEngine.iOSBLAS.csproj" />
   <Project Path="UniTask.Addressables.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Config.Runtime.csproj" />

@@ -19,6 +19,24 @@
 
 ## Recent Work
 
+### Feature: Memory Flip Card Game (Completed)
+**Goal:** Implement a fully-featured memory matching game using the UIFramework MVVM architecture.
+
+**Implementation:**
+- **Game Logic** (`MemoryGame` assembly) — Pure C# card matching engine with shuffle, flip, and win detection
+- **UIFramework Integration** — GameplayView, WinView, and CardView (MonoBehaviour) with MVVM binding
+- **State Management** — MemoryGameState (IGameState) integrates with GameLifecycleManager
+- **Wire-up** — MainMenuViewModel.RequestPlay now routes to MemoryGameState instead of LoadingState
+
+**New Files:**
+- `Assets/UIFramework/Features/MemoryGame/` assembly (UIFramework.MemoryGame)
+- Logic: `CardData`, `MemoryCardGame`, `FlipResult` (core game rules)
+- Views: `GameplayView`, `WinView`, `CardView` (MonoBehaviour, DOTween animated)
+- ViewModels: `GameplayViewModel`, `WinViewModel` with reactive properties
+- State: `MemoryGameState` registered in SampleLifetimeScope
+
+**Impact:** Demonstrates full MVVM + state machine integration; provides reference implementation for game features built on UIFramework.
+
 ### Bug Fix: Installer Dependency Resolution (Completed)
 **Issue:** UIFramework installer wizard's Step 1 (dependency installation) lacked error handling and was vulnerable to JSON parsing failures.
 

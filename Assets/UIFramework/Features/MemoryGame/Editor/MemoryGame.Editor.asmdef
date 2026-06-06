@@ -1,0 +1,22 @@
+{
+    "name": "UIFramework.MemoryGame.Editor",
+    "rootNamespace": "MemoryGame.Editor",
+    "references": [
+        "UIFramework.MemoryGame",
+        "Unity.TextMeshPro",
+        "Sinkii09.UIFramework",
+        "Sinkii09.UIFramework.Editor.Installer",
+        "Sinkii09.UIFramework.Editor.Tools"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

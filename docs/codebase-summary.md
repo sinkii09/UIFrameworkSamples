@@ -1,7 +1,7 @@
 # Codebase Summary
 
 ## Project Overview
-This is a Unity 6 UIFramework package project with a dependency management installer wizard that sets up required packages via OpenUPM (Open Unity Package Manager).
+This is a Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a sample Memory Flip Card Game demonstrating full framework integration.
 
 ## Key Components
 
@@ -11,7 +11,38 @@ This is a Unity 6 UIFramework package project with a dependency management insta
 - **VContainer 1.18.0** (jp.hadashikick.vcontainer) - Dependency injection via OpenUPM
 - **OpenUPM Registry** - Scoped registry for `com.cysharp` and `jp.hadashikick` packages
 
-All three packages now resolve through a single OpenUPM scoped registry, with transitive dependencies handled automatically.
+All three packages resolve through a single OpenUPM scoped registry, with transitive dependencies handled automatically.
+
+### Game Features
+Located in: `Assets/UIFramework/Features/MemoryGame/`
+
+**Assembly:** `UIFramework.MemoryGame` (asmdef)
+- References: Sinkii09.UIFramework, UniTask, R3.Unity, VContainer, DOTween.Modules, TextMeshPro
+
+**Folder structure:**
+```
+Features/MemoryGame/
+├── Logic/              ← Pure C# game rules
+│   ├── CardData.cs     ← Card state (id, pair index, flipped/matched flags)
+│   ├── MemoryCardGame.cs ← Game engine (shuffle, flip logic, win detection)
+│   └── FlipResult.cs   ← Enum: NeedSecond, Match, Mismatch, Locked, AlreadyFlipped, AlreadyMatched
+├── ViewModels/         ← Reactive state for views
+│   ├── GameplayViewModel.cs ← Game state + card visibility binding
+│   ├── WinViewModel.cs      ← Win screen state
+│   └── WinArgs.cs          ← Navigation args (moves, time)
+├── Views/              ← MonoBehaviour UI
+│   ├── CardView.cs     ← Single card button; listens to flip events
+│   ├── GameplayView.cs ← Board view; grid of cards
+│   └── WinView.cs      ← Win screen
+└── States/
+    └── MemoryGameState.cs ← IGameState; entry point for state machine
+```
+
+**Core Architecture:**
+- `MemoryCardGame` — Pure domain logic (shuffle, state tracking, no Unity dependencies)
+- `GameplayViewModel` — Binds game state to R3 ReactiveProperties for view binding
+- `GameplayView` — Instantiates CardView per card; observes flip events
+- `MemoryGameState` — Integrates with UINavigator; shows GameplayView on enter, navigates to WinView on complete
 
 ### UIFramework Installer Wizard
 Located in: `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
