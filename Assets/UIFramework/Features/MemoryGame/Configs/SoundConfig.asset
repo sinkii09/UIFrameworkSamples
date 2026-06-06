@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32f8305d4a151c247a23314bc39ecaa8, type: 3}
+  m_Name: SoundConfig
+  m_EditorClassIdentifier: UIFramework.MemoryGame::MemoryGame.SoundConfig
+  CardFlipClip: {fileID: 8300000, guid: 86aa66a501648034f8ec69ba5d404514, type: 3}
+  MatchClip: {fileID: 8300000, guid: 2022dcb1a6b4a7f49ba4f9de4ef3f48e, type: 3}
+  MismatchClip: {fileID: 0}
+  WinClip: {fileID: 8300000, guid: 120d834796037bf43802cdec7efa7096, type: 3}
+  BackgroundMusicClip: {fileID: 8300000, guid: ae7e74295b743cb4ea17c6a29d1549f1, type: 3}
+  MainMenuMusicClip: {fileID: 8300000, guid: 93f81efbdad4ade4c9c4b6b83eae7e4b, type: 3}
+  ButtonClickClip: {fileID: 8300000, guid: 8378807d371fc264f9628946390df8d1, type: 3}

@@ -8,12 +8,19 @@ namespace MemoryGame
     public class WinViewModel : ViewModelBase, IViewModel<WinArgs>
     {
         private readonly IUINavigator _navigator;
+        private readonly ISoundService _sound;
+        private readonly SoundConfig _soundConfig;
 
         public ReactiveProperty<string> MovesText { get; } = new();
         public ReactiveProperty<string> TimeText { get; } = new();
 
         [Inject]
-        public WinViewModel(IUINavigator navigator) => _navigator = navigator;
+        public WinViewModel(IUINavigator navigator, ISoundService sound, SoundConfig soundConfig)
+        {
+            _navigator = navigator;
+            _sound = sound;
+            _soundConfig = soundConfig;
+        }
 
         // Called by UIViewFactory before BindViewModel — properties are populated
         // before the view subscribes, so the view gets correct values immediately.
@@ -27,10 +34,17 @@ namespace MemoryGame
 
         // UINavigator.ChangeStateAsync clears the stack first (removes WinView),
         // then MemoryGameState.OnEnterAsync shows GameplayView fresh.
-        public void OnPlayAgain() =>
+        public void OnPlayAgain()
+        {
+            _sound.PlaySFX(_soundConfig.ButtonClickClip);
             _navigator.ChangeStateAsync<MemoryGameState>().Forget();
+        }
 
-        public void OnMainMenu() => OnMainMenuAsync().Forget();
+        public void OnMainMenu()
+        {
+            _sound.PlaySFX(_soundConfig.ButtonClickClip);
+            OnMainMenuAsync().Forget();
+        }
 
         private async UniTaskVoid OnMainMenuAsync()
         {

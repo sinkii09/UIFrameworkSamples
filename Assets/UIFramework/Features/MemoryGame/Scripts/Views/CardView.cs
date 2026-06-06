@@ -55,7 +55,17 @@ namespace MemoryGame
         public void PlayMatchEffect()
         {
             _button.interactable = false;
-            transform.DOPunchScale(Vector3.one * 0.18f, 0.35f, 5, 0.5f);
+            // DOKill stops any in-progress flip tween; _isAnimating may be stale after kill
+            // but is harmless — card is destroyed at session end and button is already disabled.
+            transform.DOKill();
+            // Punch → burst scale-up → implode; _locked in MemoryCardGame prevents mismatch
+            // flip-back from racing with this sequence.
+            DOTween.Sequence()
+                .Append(transform.DOPunchScale(Vector3.one * 0.25f, 0.35f, 6, 0.5f))
+                .Append(transform.DOScale(1.2f, 0.1f))
+                // Scale to zero instead of SetActive(false) — keeps the grid slot reserved so
+                // GridLayoutGroup does not recalculate and shift remaining cards.
+                .Append(transform.DOScale(0f, 0.25f).SetEase(Ease.InBack));
         }
 
         private void AnimateFlip(bool toFront, Action onComplete)

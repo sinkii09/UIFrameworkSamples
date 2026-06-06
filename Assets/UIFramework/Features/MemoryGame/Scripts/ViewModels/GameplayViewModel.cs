@@ -3,11 +3,10 @@ using Cysharp.Threading.Tasks;
 using R3;
 using Sinkii09.UIFramework;
 using UnityEngine;
+using VContainer;
 
 namespace MemoryGame
 {
-    // No DI dependencies — pure game logic + reactive state.
-    // VContainer resolves this via default constructor inside UIViewFactory's child scope.
     public class GameplayViewModel : ViewModelBase
     {
         public ReactiveProperty<int> Moves { get; } = new(0);
@@ -21,12 +20,18 @@ namespace MemoryGame
         public Subject<(int Id1, int Id2)> MatchConfirmed { get; } = new();
         public Subject<WinArgs> GameWon { get; } = new();
 
+        private readonly ISoundService _sound;
+        private readonly SoundConfig _soundConfig;
+
         private MemoryCardGame _game;
         private float _startTime;
         private CancellationTokenSource _timerCts;
 
-        public GameplayViewModel()
+        [Inject]
+        public GameplayViewModel(ISoundService sound, SoundConfig soundConfig)
         {
+            _sound = sound;
+            _soundConfig = soundConfig;
             FlipToFront.AddTo(ref _disposables);
             FlipToBack.AddTo(ref _disposables);
             MatchConfirmed.AddTo(ref _disposables);
@@ -47,10 +52,14 @@ namespace MemoryGame
             _timerCts = new CancellationTokenSource();
             _startTime = Time.time;
             RunTimerAsync(_timerCts.Token).Forget();
+
+            _sound.PlayMusic(_soundConfig.BackgroundMusicClip);
         }
 
         public override void OnHide()
         {
+            _sound.StopMusic();
+
             // Cancel timer before nulling _game so DelayedFlipBackAsync's guard fires correctly.
             _timerCts?.Cancel();
             _timerCts?.Dispose();
@@ -77,6 +86,7 @@ namespace MemoryGame
                 result == FlipResult.Mismatch)
             {
                 FlipToFront.OnNext(cardId);
+                _sound.PlaySFX(_soundConfig.CardFlipClip);
             }
         }
 
@@ -85,17 +95,21 @@ namespace MemoryGame
             Moves.Value = _game.Moves;
             MatchesFound.Value = _game.MatchesFound;
             MatchConfirmed.OnNext((id1, id2));
+            _sound.PlaySFX(_soundConfig.MatchClip);
         }
 
         private void HandleMismatch(int id1, int id2)
         {
             Moves.Value = _game.Moves;
+            _sound.PlaySFX(_soundConfig.MismatchClip);
             DelayedFlipBackAsync(id1, id2, _timerCts?.Token ?? default).Forget();
         }
 
         private void HandleGameComplete()
         {
             _timerCts?.Cancel();
+            _sound.PlaySFX(_soundConfig.WinClip);
+            _sound.StopMusic();
             float elapsed = Time.time - _startTime;
             GameWon.OnNext(new WinArgs { Moves = _game.Moves, ElapsedSeconds = elapsed });
         }

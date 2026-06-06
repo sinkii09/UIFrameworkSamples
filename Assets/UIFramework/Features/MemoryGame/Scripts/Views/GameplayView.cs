@@ -56,13 +56,20 @@ namespace MemoryGame
             // vm.OnShow() has already run by the time GameWon fires — navigator is valid.
             vm.GameWon.Subscribe(args =>
             {
-                _navigator.ShowAsync<WinView, WinArgs>(args).Forget();
+                ShowWinViewDelayedAsync(args).Forget();
             }).AddTo(ref _showDisposables);
 
             if (_menuButton != null)
                 _menuButton.OnClickAsObservable()
                     .Subscribe(_ => GoToMainMenuAsync().Forget())
                     .AddTo(ref _showDisposables);
+        }
+
+        // 900 ms matches the card disappear animation (700 ms) plus a short pause before win screen.
+        private async UniTaskVoid ShowWinViewDelayedAsync(WinArgs args)
+        {
+            await UniTask.Delay(900, cancellationToken: destroyCancellationToken);
+            await _navigator.ShowAsync<WinView, WinArgs>(args);
         }
 
         private async UniTaskVoid GoToMainMenuAsync()

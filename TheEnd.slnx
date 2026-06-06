@@ -61,7 +61,6 @@
   <Project Path="UniTask.Linq.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.csproj" />
   <Project Path="glTFast.Export.csproj" />
-  <Project Path="UIFramework.MemoryGame.Editor.csproj" />
   <Project Path="Unity.AppUI.Navigation.Editor.csproj" />
   <Project Path="PsdPlugin.csproj" />
   <Project Path="Unity.Serialization.csproj" />
@@ -106,6 +105,7 @@
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.UnifiedRayTracing.Runtime.csproj" />
   <Project Path="glTFast.Documentation.Examples.csproj" />
+  <Project Path="UIFramework.MemoryGame.csproj" />
   <Project Path="Unity.2D.Tilemap.Extras.Editor.csproj" />
   <Project Path="Unity.2D.Sprite.Editor.csproj" />
   <Project Path="Unity.AppUI.Navigation.csproj" />
@@ -123,7 +123,6 @@
   <Project Path="Unity.2D.IK.Runtime.csproj" />
   <Project Path="Unity.Addressables.csproj" />
   <Project Path="Unity.AI.Assistant.Annotations.Editor.csproj" />
-  <Project Path="UIFramework.MemoryGame.csproj" />
   <Project Path="Unity.AppUI.Editor.csproj" />
   <Project Path="Unity.PathTracing.Runtime.csproj" />
   <Project Path="Unity.AI.Generators.UI.AIDropdownIntegrations.csproj" />
@@ -168,6 +167,7 @@
   <Project Path="Unity.InternalAPIEditorBridge.ShaderGraph.Editor.csproj" />
   <Project Path="Unity.AppUI.InternalAPIBridge.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
+  <Project Path="UIFramework.MemoryGame.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Async.csproj" />
   <Project Path="Unity.Deformations.csproj" />
   <Project Path="glTFast.dots.csproj" />

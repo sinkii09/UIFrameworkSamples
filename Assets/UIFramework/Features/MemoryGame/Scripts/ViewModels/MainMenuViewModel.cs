@@ -9,14 +9,33 @@ namespace MemoryGame
     public class MainMenuViewModel : ViewModelBase
     {
         private readonly IUINavigator _navigator;
+        private readonly ISoundService _sound;
+        private readonly SoundConfig _soundConfig;
 
         public ReactiveProperty<string> Title { get; } = new("Main Menu");
 
         [Inject]
-        public MainMenuViewModel(IUINavigator navigator) => _navigator = navigator;
+        public MainMenuViewModel(IUINavigator navigator, ISoundService sound, SoundConfig soundConfig)
+        {
+            _navigator = navigator;
+            _sound = sound;
+            _soundConfig = soundConfig;
+        }
+
+        public override void OnShow()
+        {
+            _sound.PlayMusic(_soundConfig.MainMenuMusicClip);
+        }
+
+        public override void OnHide()
+        {
+            _sound.StopMusic();
+            base.OnHide();
+        }
 
         public void RequestPlay()
         {
+            _sound.PlaySFX(_soundConfig.ButtonClickClip);
             // UINavigator.ChangeStateAsync clears the stack first (hides MainMenu),
             // then triggers MemoryGameState.OnEnterAsync which shows GameplayView.
             _navigator.ChangeStateAsync<MemoryGameState>().Forget();
@@ -24,11 +43,13 @@ namespace MemoryGame
 
         public void RequestSettings()
         {
+            _sound.PlaySFX(_soundConfig.ButtonClickClip);
             _navigator.ShowAsync<SettingsView>().Forget();
         }
 
         public void RequestQuit()
         {
+            _sound.PlaySFX(_soundConfig.ButtonClickClip);
             Debug.Log("[Sample] Quit requested");
             Application.Quit();
         }
