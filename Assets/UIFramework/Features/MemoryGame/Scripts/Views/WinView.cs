@@ -19,18 +19,11 @@ namespace MemoryGame
         // so ReactiveProperties carry correct values at subscription time.
         protected override void BindViewModel(WinViewModel vm)
         {
-            vm.MovesText.Subscribe(v => _movesText.SetText(v)).AddTo(ref _showDisposables);
-            vm.TimeText.Subscribe(v => _timeText.SetText(v)).AddTo(ref _showDisposables);
+            vm.MovesText.BindToText(_movesText).AddTo(ref _showDisposables);
+            vm.TimeText.BindToText(_timeText).AddTo(ref _showDisposables);
 
-            _playAgainButton.onClick.AddListener(vm.OnPlayAgain);
-            _mainMenuButton.onClick.AddListener(vm.OnMainMenu);
-            // Track removal in _showDisposables so listeners are cleaned up on hide,
-            // preventing stale delegates from invoking a disposed ViewModel if the view is pooled.
-            R3.Disposable.Create(() =>
-            {
-                _playAgainButton.onClick.RemoveListener(vm.OnPlayAgain);
-                _mainMenuButton.onClick.RemoveListener(vm.OnMainMenu);
-            }).AddTo(ref _showDisposables);
+            _playAgainButton.BindButton(vm.OnPlayAgain, ref _showDisposables);
+            _mainMenuButton.BindButton(vm.OnMainMenu, ref _showDisposables);
         }
     }
 }

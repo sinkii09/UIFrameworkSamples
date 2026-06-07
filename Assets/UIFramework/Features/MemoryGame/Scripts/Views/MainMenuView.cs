@@ -19,9 +19,9 @@ namespace MemoryGame
         {
             vm.Title.BindToText(_titleText).AddTo(ref _showDisposables);
 
-            _playButton.onClick.AddListener(vm.RequestPlay);
-            _settingsButton.onClick.AddListener(vm.RequestSettings);
-            _quitButton.onClick.AddListener(vm.RequestQuit);
+            _playButton.BindButton(vm.RequestPlay, ref _showDisposables);
+            _settingsButton.BindButton(vm.RequestSettings, ref _showDisposables);
+            _quitButton.BindButton(vm.RequestQuit, ref _showDisposables);
         }
     }
 }

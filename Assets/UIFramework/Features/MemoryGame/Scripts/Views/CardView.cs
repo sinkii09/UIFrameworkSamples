@@ -10,6 +10,7 @@ namespace MemoryGame
     {
         [SerializeField] private Image _frontImage;
         [SerializeField] private Image _backImage;
+        [SerializeField] private Image _faceImage;
         [SerializeField] private Button _button;
 
         private const float HalfFlipDuration = 0.12f;
@@ -31,7 +32,7 @@ namespace MemoryGame
         public void Setup(int cardId, Sprite faceSprite, Sprite backSprite = null)
         {
             CardId = cardId;
-            _frontImage.sprite = faceSprite;
+            _faceImage.sprite = faceSprite;
             if (backSprite != null) _backImage.sprite = backSprite;
             _frontImage.gameObject.SetActive(false);
             _backImage.gameObject.SetActive(true);

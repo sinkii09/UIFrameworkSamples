@@ -26,10 +26,8 @@ namespace MemoryGame
         // before the view subscribes, so the view gets correct values immediately.
         public void Initialize(WinArgs args)
         {
-            int m = (int)(args.ElapsedSeconds / 60f);
-            int s = (int)(args.ElapsedSeconds % 60f);
             MovesText.Value = $"Moves: {args.Moves}";
-            TimeText.Value = $"Time: {m}:{s:D2}";
+            TimeText.Value = $"Time: {UIFormatUtils.FormatTime(args.ElapsedSeconds)}";
         }
 
         // UINavigator.ChangeStateAsync clears the stack first (removes WinView),

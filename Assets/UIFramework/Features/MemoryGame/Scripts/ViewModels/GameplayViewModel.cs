@@ -127,9 +127,7 @@ namespace MemoryGame
             while (!ct.IsCancellationRequested)
             {
                 float elapsed = Time.time - _startTime;
-                int minutes = (int)(elapsed / 60f);
-                int seconds = (int)(elapsed % 60f);
-                TimerText.Value = $"{minutes}:{seconds:D2}";
+                TimerText.Value = UIFormatUtils.FormatTime(elapsed);
                 await UniTask.Delay(100, cancellationToken: ct).SuppressCancellationThrow();
             }
         }

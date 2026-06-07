@@ -1,3 +1,4 @@
+using R3;
 using Sinkii09.UIFramework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,8 +19,8 @@ namespace MemoryGame
             _sfxToggle.BindTwoWay(vm.SfxEnabled, ref _showDisposables);
             _musicToggle.BindTwoWay(vm.MusicEnabled, ref _showDisposables);
 
-            _saveButton.onClick.AddListener(vm.Save);
-            _closeButton.onClick.AddListener(vm.RequestClose);
+            _saveButton.BindButton(vm.Save, ref _showDisposables);
+            _closeButton.BindButton(vm.RequestClose, ref _showDisposables);
         }
     }
 }
