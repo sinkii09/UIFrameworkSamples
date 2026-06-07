@@ -75,6 +75,7 @@ namespace MemoryGame
         private async UniTaskVoid GoToMainMenuAsync()
         {
             await _navigator.CloseAllAsync();
+            _navigator.ResetState();
             await _navigator.ShowAsync<MainMenuView>();
         }
 

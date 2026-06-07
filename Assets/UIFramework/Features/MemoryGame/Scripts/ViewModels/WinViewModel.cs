@@ -50,6 +50,7 @@ namespace MemoryGame
             // Guard here so we don't push MainMenuView onto a stack that wasn't cleared.
             if (_navigator.IsTransitioning) return;
             await _navigator.CloseAllAsync();
+            _navigator.ResetState();
             await _navigator.ShowAsync<MainMenuView>();
         }
     }
