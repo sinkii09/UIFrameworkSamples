@@ -56,7 +56,7 @@ namespace MemoryGame
             _sound.PlayMusic(_soundConfig.BackgroundMusicClip);
         }
 
-        public override void OnHide()
+        protected override void OnHide()
         {
             _sound.StopMusic();
 
@@ -72,8 +72,6 @@ namespace MemoryGame
                 _game.OnGameComplete -= HandleGameComplete;
                 _game = null;
             }
-
-            base.OnHide();
         }
 
         public System.Collections.Generic.IReadOnlyList<CardData> GetInitialCards() => _game.Cards;

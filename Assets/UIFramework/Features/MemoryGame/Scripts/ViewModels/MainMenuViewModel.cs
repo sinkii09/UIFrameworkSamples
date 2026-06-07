@@ -27,10 +27,9 @@ namespace MemoryGame
             _sound.PlayMusic(_soundConfig.MainMenuMusicClip);
         }
 
-        public override void OnHide()
+        protected override void OnHide()
         {
             _sound.StopMusic();
-            base.OnHide();
         }
 
         public void RequestPlay()

@@ -38,13 +38,16 @@ namespace MemoryGame
                 _sound.SetSFXEnabled(v);
             }).AddTo(ref _showDisposables);
 
-            MusicEnabled.Skip(1).Subscribe(v =>
-            {
-                PlayerPrefs.SetInt("MusicEnabled", v ? 1 : 0);
-                PlayerPrefs.Save();
-                _sound.SetMusicEnabled(v);
-            }).AddTo(ref _showDisposables);
+            MusicEnabled.Skip(1).Subscribe(HandleMusicToggle).AddTo(ref _showDisposables);
         }
+
+        private void HandleMusicToggle(bool v)
+        {
+            PlayerPrefs.SetInt("MusicEnabled", v ? 1 : 0);
+            PlayerPrefs.Save();
+            _sound.SetMusicEnabled(v);
+        }
+
 
         public void RequestClose()
         {
