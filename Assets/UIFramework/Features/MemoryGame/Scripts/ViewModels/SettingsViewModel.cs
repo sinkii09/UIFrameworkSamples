@@ -27,17 +27,20 @@ namespace MemoryGame
         {
             SfxEnabled.Value = PlayerPrefs.GetInt("SfxEnabled", 1) == 1;
             MusicEnabled.Value = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
-        }
 
-        public void Save()
-        {
-            _sound.PlaySFX(_soundConfig.ButtonClickClip);
-            PlayerPrefs.SetInt("SfxEnabled", SfxEnabled.Value ? 1 : 0);
-            PlayerPrefs.SetInt("MusicEnabled", MusicEnabled.Value ? 1 : 0);
-            PlayerPrefs.Save();
-            _sound.SetSFXEnabled(SfxEnabled.Value);
-            _sound.SetMusicEnabled(MusicEnabled.Value);
-            Debug.Log($"[Sample] Settings saved — SFX: {SfxEnabled.Value}, Music: {MusicEnabled.Value}");
+            SfxEnabled.Subscribe(v =>
+            {
+                PlayerPrefs.SetInt("SfxEnabled", v ? 1 : 0);
+                PlayerPrefs.Save();
+                _sound.SetSFXEnabled(v);
+            }).AddTo(ref _showDisposables);
+
+            MusicEnabled.Subscribe(v =>
+            {
+                PlayerPrefs.SetInt("MusicEnabled", v ? 1 : 0);
+                PlayerPrefs.Save();
+                _sound.SetMusicEnabled(v);
+            }).AddTo(ref _showDisposables);
         }
 
         public void RequestClose()
