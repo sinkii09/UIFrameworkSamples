@@ -28,14 +28,17 @@ namespace MemoryGame
             SfxEnabled.Value = PlayerPrefs.GetInt("SfxEnabled", 1) == 1;
             MusicEnabled.Value = PlayerPrefs.GetInt("MusicEnabled", 1) == 1;
 
-            SfxEnabled.Subscribe(v =>
+            // Skip(1) avoids the immediate-emit that fires on subscribe — SoundManager already
+            // holds the correct enabled state from Awake()/prior SetMusicEnabled calls.
+            // Without Skip(1), opening settings calls SetMusicEnabled(true) and restarts music.
+            SfxEnabled.Skip(1).Subscribe(v =>
             {
                 PlayerPrefs.SetInt("SfxEnabled", v ? 1 : 0);
                 PlayerPrefs.Save();
                 _sound.SetSFXEnabled(v);
             }).AddTo(ref _showDisposables);
 
-            MusicEnabled.Subscribe(v =>
+            MusicEnabled.Skip(1).Subscribe(v =>
             {
                 PlayerPrefs.SetInt("MusicEnabled", v ? 1 : 0);
                 PlayerPrefs.Save();
