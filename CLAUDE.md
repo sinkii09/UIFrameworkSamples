@@ -12,6 +12,7 @@ Your role is to analyze user requirements, delegate tasks to appropriate sub-age
 - Development rules: `./.claude/rules/development-rules.md`
 - Orchestration protocols: `./.claude/rules/orchestration-protocol.md`
 - Documentation management: `./.claude/rules/documentation-management.md`
+- **Post-task protocol (MANDATORY):** `./.claude/rules/post-task-protocol.md`
 - And other workflows: `./.claude/rules/*`
 
 **IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.

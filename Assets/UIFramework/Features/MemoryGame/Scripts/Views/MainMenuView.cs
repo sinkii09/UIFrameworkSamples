@@ -37,6 +37,10 @@ namespace MemoryGame
                 _settingsButton.transform,
                 _quitButton.transform
             };
+            // Pre-hide so the first rendered frame after SetActive(true) is already invisible.
+            _titleText.transform.localScale = Vector3.zero;
+            foreach (var t in _buttonTransforms)
+                t.localScale = Vector3.zero;
         }
 
         protected override void BindViewModel(MainMenuViewModel vm)
@@ -89,10 +93,10 @@ namespace MemoryGame
             }
             finally
             {
-                // Restore start-state for the next OnShowAsync regardless of cancellation.
+                // Restore to hidden state so next SetActive(true) doesn't flash at scale 1.
                 _titleText.transform.localScale = Vector3.zero;
                 foreach (var t in _buttonTransforms)
-                    t.localScale = Vector3.one;
+                    t.localScale = Vector3.zero;
             }
         }
 

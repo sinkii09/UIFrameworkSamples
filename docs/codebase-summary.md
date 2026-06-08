@@ -1,92 +1,110 @@
 # Codebase Summary
 
 ## Project Overview
-This is a Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a sample Memory Flip Card Game demonstrating full framework integration.
+Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Memory Flip Card Game that demonstrates full framework integration. The game is complete and playable with sound, animations, and win detection.
 
-## Key Components
+## Package Dependencies (`Packages/manifest.json`)
+- **UniTask 2.5.11** (`com.cysharp.unitask`) — async/await support
+- **R3 1.3.1** (`com.cysharp.r3`) — reactive extensions
+- **VContainer 1.18.0** (`jp.hadashikick.vcontainer`) — dependency injection
+- **DOTween Pro** — tween engine (installed via Asset Store, not UPM)
+- **TextMeshPro** — Unity built-in
 
-### Package Dependencies (Packages/manifest.json)
-- **UniTask 2.5.11** (com.cysharp.unitask) - Async/await support via OpenUPM
-- **R3 1.3.1** (com.cysharp.r3) - Reactive extensions library via OpenUPM
-- **VContainer 1.18.0** (jp.hadashikick.vcontainer) - Dependency injection via OpenUPM
-- **OpenUPM Registry** - Scoped registry for `com.cysharp` and `jp.hadashikick` packages
+All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registry.
 
-All three packages resolve through a single OpenUPM scoped registry, with transitive dependencies handled automatically.
+**Scripting defines required:**
+- `VCONTAINER_UNITASK_INTEGRATION` — enables VContainer async scope support
+- `UNITASK_DOTWEEN_SUPPORT` — **NOT defined**; DOTween↔UniTask bridged manually via `UniTaskCompletionSource` in `DOTweenUIAnimator.AwaitTween`
 
-### Game Features
-Located in: `Assets/UIFramework/Features/MemoryGame/`
+---
 
-**Assembly:** `UIFramework.MemoryGame` (asmdef)
-- References: Sinkii09.UIFramework, UniTask, R3.Unity, VContainer, DOTween.Modules, TextMeshPro
+## UIFramework Package (`Packages/com.sinkii09.uiframework/`)
 
-**Folder structure:**
+### Core Systems
+| File | Purpose |
+|------|---------|
+| `Runtime/Core/MVVM/UIView<T>.cs` | Base view — binds ViewModel, exposes `OnShowAsync`/`OnHideAsync` |
+| `Runtime/Core/MVVM/UIViewBase.cs` | Caches `CanvasGroup`, `RectTransform`; drives show/hide lifecycle |
+| `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
+| `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Bridges `Tween→UniTask` without `UNITASK_DOTWEEN_SUPPORT` using `UniTaskCompletionSource` + `CancellationTokenRegistration` (disposed on complete/kill to prevent stale callbacks on pooled tweens) |
+| `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
+
+### Installer Wizard
+`Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
+
+6-step in-Editor setup: installs OpenUPM packages → adds scripting defines → validates DOTween → creates UIRoot prefab → creates config ScriptableObject → creates folder structure.
+
+---
+
+## Memory Flip Card Game (`Assets/UIFramework/Features/MemoryGame/`)
+
+**Assembly:** `UIFramework.MemoryGame`
+
+### Folder Structure
 ```
 Features/MemoryGame/
-├── Logic/              ← Pure C# game rules
-│   ├── CardData.cs     ← Card state (id, pair index, flipped/matched flags)
-│   ├── MemoryCardGame.cs ← Game engine (shuffle, flip logic, win detection)
-│   └── FlipResult.cs   ← Enum: NeedSecond, Match, Mismatch, Locked, AlreadyFlipped, AlreadyMatched
-├── ViewModels/         ← Reactive state for views
-│   ├── GameplayViewModel.cs ← Game state + card visibility binding
-│   ├── WinViewModel.cs      ← Win screen state
-│   └── WinArgs.cs          ← Navigation args (moves, time)
-├── Views/              ← MonoBehaviour UI
-│   ├── CardView.cs     ← Single card button; listens to flip events
-│   ├── GameplayView.cs ← Board view; grid of cards
-│   └── WinView.cs      ← Win screen
+├── Logic/
+│   ├── CardData.cs           ← Card state (id, pairIndex, flipped/matched flags)
+│   ├── MemoryCardGame.cs     ← Pure domain engine (shuffle, flip, win detection)
+│   └── FlipResult.cs         ← Enum: NeedSecond|Match|Mismatch|Locked|AlreadyFlipped|AlreadyMatched
+├── ViewModels/
+│   ├── MainMenuViewModel.cs  ← Title, RequestPlay/Settings/Quit commands
+│   ├── GameplayViewModel.cs  ← Game state + card visibility reactive bindings
+│   ├── WinViewModel.cs       ← Win screen state (moves, time, replay/menu commands)
+│   ├── SettingsViewModel.cs  ← Music/SFX toggle state
+│   └── WinArgs.cs            ← Navigation args passed to WinView
+├── Views/
+│   ├── MainMenuView.cs       ← DOTween entrance/exit animations (scale punch + stagger); buttons inside LayoutGroup use DOScale (not DOAnchorPosY — layout overrides position)
+│   ├── CardView.cs           ← Single card; flip animation on tap
+│   ├── GameplayView.cs       ← Board; instantiates CardView grid
+│   ├── WinView.cs            ← Win screen
+│   └── SettingsView.cs       ← Music/SFX toggles
+├── Audio/
+│   ├── ISoundService.cs      ← Interface: PlaySFX, PlayMusic, StopMusic, SetSFXEnabled, SetMusicEnabled
+│   └── SoundManager.cs       ← MonoBehaviour impl; two AudioSources (music loop + SFX one-shot); persists state to PlayerPrefs
 └── States/
-    └── MemoryGameState.cs ← IGameState; entry point for state machine
+    └── MemoryGameState.cs    ← IGameState; navigation entry point
 ```
 
-**Core Architecture:**
-- `MemoryCardGame` — Pure domain logic (shuffle, state tracking, no Unity dependencies)
-- `GameplayViewModel` — Binds game state to R3 ReactiveProperties for view binding
-- `GameplayView` — Instantiates CardView per card; observes flip events
-- `MemoryGameState` — Integrates with UINavigator; shows GameplayView on enter, navigates to WinView on complete
+### Key Architecture Notes
+- `MemoryCardGame` — pure C#, no Unity dependency; all game rules isolated here
+- `SoundManager` — two separate `AudioSource` components required (`_musicSource`, `_sfxSource`). The `RequireComponent(AudioSource)` provides one; second must be added manually in Inspector
+- `MainMenuView` — all DOTween tweens use `SetUpdate(true)` (pause-safe at `Time.timeScale=0`). Pre-hides title+buttons in `Awake` so `SetActive(true)` renders first frame already invisible (no flash)
+- `DOTweenUIAnimator.AwaitTween` — shared pattern; `CancellationTokenRegistration` disposed on both `OnComplete`/`OnKill` to avoid stale kill callbacks on DOTween's recycled tween pool
 
-### UIFramework Installer Wizard
-Located in: `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
+### Scene & Prefabs
+- `Assets/Resources/` — all view prefabs loaded by name via UINavigator
+- `Assets/Resources/GameplayView.prefab` — root board view
+- `Assets/UIFramework/Features/MemoryGame/Prefabs/Card.prefab` — card template
 
-The installer is a 6-step setup wizard that runs within the Unity Editor:
+---
 
-1. **Step 1 - Install dependencies** - Adds OpenUPM registry and three core packages to manifest.json
-2. **Step 2 - Add VCONTAINER_UNITASK_INTEGRATION define** - Enables VContainer-UniTask integration
-3. **Step 3 - Validate DOTween Pro** - Confirms DOTween Pro from Asset Store is installed
-4. **Step 4 - Create UIRoot prefab** - Generates the root UI canvas with standard configuration
-5. **Step 5 - Create UIFrameworkConfig asset** - Generates ScriptableObject configuration
-6. **Step 6 - Create folder structure** - Sets up project asset folders (_Project, Resources, etc.)
+## Recent Changes
 
-## Recent Changes (Bug Fix)
+### 2026-06-08 — MainMenuView animation flash fix
+**Issue:** Buttons visible for one frame before entrance animation started (flash on show).
+**Root cause 1:** `OnHideAsync` finally block restored buttons to `Vector3.one` instead of `Vector3.zero`; next `SetActive(true)` rendered that frame at full scale before `OnShowAsync` reset them.
+**Root cause 2:** No initial hidden state set in `Awake`; first-ever show also flashed.
+**Fix:** Set `localScale = Vector3.zero` for title + all buttons in `Awake`; corrected finally block from `Vector3.one` → `Vector3.zero`.
 
-### Issue
-The UIFramework installer's dependency installation (Step 1) had two critical issues:
-- No error handling for file I/O operations (read/write failures silent or unhandled)
-- Array boundary search for `scopedRegistries` block could mis-fire on malformed JSON
+### 2026-06-08 — MainMenuView LayoutGroup animation compatibility
+**Issue:** `DOAnchorPosY` animation broken — buttons visible only at wrong positions (LayoutGroup overrides `anchoredPosition` every frame).
+**Fix:** Replaced position animation with `DOScale` (0→1, `Ease.OutBack`). LayoutGroup never touches `localScale`. Removed `_buttonSlideDownOffset`, `_buttonOrigins`, `_buttonRects`; replaced with `_buttonTransforms: Transform[]`.
 
-### Fix Applied
-File: `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
+### 2026-06-08 — DOTweenUIAnimator CancellationTokenRegistration leak fix
+**Issue:** `ct.Register(() => tween.Kill())` result never disposed; stale kill callback could fire on DOTween's pooled/recycled tween objects.
+**Fix:** Capture `CancellationTokenRegistration reg` and dispose in both `OnComplete` and `OnKill` lambdas. Applied to both `DOTweenUIAnimator.AwaitTween` and `MainMenuView.AwaitTween`.
 
-**Step 1_InstallDeps hardening:**
-- Wrapped `File.ReadAllText()` in try/catch with proper error reporting
-- Wrapped `File.WriteAllText()` in try/catch with proper error reporting
-- Added bounded search window (40 chars) in `InsertScopedRegistry()` to prevent false matches
+### 2026-06-07 — Sound system
+Added `ISoundService` + `SoundManager` with separate music/SFX AudioSources. Music loops; SFX plays one-shot. State persisted to `PlayerPrefs`. `SettingsView` toggles wired through `SettingsViewModel`.
 
-**Manifest.json structure update:**
-- Replaced Git URL entries with OpenUPM version strings
-- Added OpenUPM scoped registry configuration block
-- All dependencies now resolve through `https://package.openupm.com`
+### 2026-06-07 — MainMenuView juice animations
+Added DOTween entrance/exit to `MainMenuView`: title scale-punch (`OutBack`), buttons stagger scale-in (`OutBack`, 80ms apart), hide collapses everything (`InBack`). All run with `SetUpdate(true)`.
 
-**R3 implicit dependency note:**
-- Added developer comment documenting R3 1.3.1's implicit runtime dependency on `com.unity.nuget.newtonsoft-json`
-- Not declared in lock file; consumers may need manual addition if Newtonsoft types are missing
-
-### Impact
-- Installer Step 1 now handles file I/O errors gracefully with clear error messages
-- Manifest.json parsing is more robust against malformed JSON
-- All three packages (UniTask, R3, VContainer) resolve correctly from OpenUPM with automatic transitive dependency resolution
-- Installation process is now reliable and repeatable
+---
 
 ## Code Standards
-- Error handling: all file I/O operations wrapped in try/catch with user-facing error logs
-- String searching: bounded window searches to prevent false matches in JSON parsing
-- Comments: critical behavior documented inline (e.g., R3's Newtonsoft.Json dependency)
+- DOTween↔UniTask bridge: always use `UniTaskCompletionSource` pattern (no `UNITASK_DOTWEEN_SUPPORT`); always dispose `CancellationTokenRegistration`
+- DOTween tweens: always `SetUpdate(true)` so they survive `Time.timeScale = 0`
+- Animations inside LayoutGroup: use `DOScale`, never `DOAnchorPosY`/`DOMove`
+- Pre-hide animated views in `Awake` (`localScale = Vector3.zero`) to prevent first-frame flash
