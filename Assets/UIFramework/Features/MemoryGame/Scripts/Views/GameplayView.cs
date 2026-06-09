@@ -30,6 +30,8 @@ namespace MemoryGame
         [Inject] private IUINavigator _navigator;
 
         private readonly List<CardView> _cardViews = new();
+        private CancellationTokenSource _winViewCts;
+        private bool _navigatingToMenu;
 
         // Called by UIViewBase.ShowAsync before SetActive(true) — resets root scale so
         // the first rendered frame after activation is already at the punch-in starting scale.
@@ -74,18 +76,50 @@ namespace MemoryGame
                     .AddTo(ref _showDisposables);
         }
 
-        // 900 ms matches the card disappear animation (700 ms) plus a short pause before win screen.
+        // 1000 ms = card disappear animation (~700 ms) + 300 ms pause before win screen.
         private async UniTaskVoid ShowWinViewDelayedAsync(WinArgs args)
         {
-            await UniTask.Delay(1000, cancellationToken: destroyCancellationToken);
-            await _navigator.ShowAsync<WinView, WinArgs>(args);
+            _winViewCts?.Cancel();
+            _winViewCts?.Dispose();
+            _winViewCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            try
+            {
+                await UniTask.Delay(1000, cancellationToken: _winViewCts.Token);
+                await _navigator.ShowAsync<WinView, WinArgs>(args, _winViewCts.Token);
+            }
+            catch (OperationCanceledException) { /* cancelled by GoToMainMenuAsync or destroy — intentional */ }
+            finally
+            {
+                _winViewCts?.Dispose();
+                _winViewCts = null;
+            }
         }
 
         private async UniTaskVoid GoToMainMenuAsync()
         {
-            await _navigator.CloseAllAsync();
-            _navigator.ResetState();
-            await _navigator.ShowAsync<MainMenuView>();
+            if (_navigatingToMenu) return;
+            _navigatingToMenu = true;
+            // Cancel any pending/in-flight WinView show. Without this, ShowAsync<WinView> could
+            // re-acquire _isTransitioning in the one-frame gap between WaitUntil and CloseAllAsync,
+            // causing CloseAllAsync to be silently dropped (same class of bug being fixed here).
+            _winViewCts?.Cancel();
+            try
+            {
+                // Wait for any in-flight transition (entrance anim, cancelled WinView show, etc.)
+                // before navigating — CloseAllAsync is silently dropped when _isTransitioning is true.
+                // Safe: UINavigator always clears _isTransitioning in its finally blocks, so this
+                // cannot deadlock. Assumes UIViewBase.HideAsync deactivates (SetActive false) rather
+                // than Destroys the GO — if that changes, destroyCancellationToken may fire mid-
+                // CloseAllAsync and leave ResetState/ShowAsync unexecuted.
+                await UniTask.WaitUntil(() => !_navigator.IsTransitioning,
+                    cancellationToken: destroyCancellationToken);
+                await _navigator.CloseAllAsync();
+                _navigator.ResetState();
+                await _navigator.ShowAsync<MainMenuView>();
+            }
+            catch (OperationCanceledException) { /* view destroyed mid-navigation — intentional */ }
+            catch (Exception ex) { Debug.LogError($"[GameplayView] GoToMainMenuAsync failed: {ex}"); }
+            finally { _navigatingToMenu = false; }
         }
 
         // Called after vm.OnShow() — _game is initialized so GetInitialCards() is safe.
@@ -124,6 +158,9 @@ namespace MemoryGame
         private void OnDisable()
         {
             transform.DOKill();
+            _winViewCts?.Cancel();
+            _winViewCts?.Dispose();
+            _winViewCts = null;
         }
 
         private void SpawnGrid(GameplayViewModel vm)
