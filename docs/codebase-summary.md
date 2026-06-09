@@ -98,8 +98,16 @@ Features/MemoryGame/
 ### 2026-06-07 — Sound system
 Added `ISoundService` + `SoundManager` with separate music/SFX AudioSources. Music loops; SFX plays one-shot. State persisted to `PlayerPrefs`. `SettingsView` toggles wired through `SettingsViewModel`.
 
+### 2026-06-08 — Zoom-punch scene transition (MainMenu → Gameplay)
+**Feature:** Option B zoom-out-fade transition between screens.
+- New `ZoomOutFadeTransition.cs` (UIFramework package) — `UITransition` subclass; `CreateHideTween` joins root scale 1→ZoomOutScale + CanvasGroup fade 1→0 simultaneously. `CreateShowTween` is the inverse.
+- `MainMenuView.OnHideAsync` simplified to state-reset only (element scales back to 0, root scale back to 1) — visual is owned by the UITransition.
+- `GameplayView.OnShowAsync` — sets root scale to 0.9, spawns grid, then punches scale to 1 with `Ease.OutBack` (0.4 s) giving "entering the game" feel.
+**Key lifecycle insight:** `UIViewBase.HideAsync` runs `_animator.HideAsync` (UITransition) BEFORE `OnHideAsync`. `OnHideAsync` runs after the view is already visually hidden — use it for state reset/cleanup only, not visible animations.
+**Manual step required:** In Unity Inspector, create `ZoomOutFadeTransition` asset via `Assets > Create > UIFramework/Transitions/ZoomOutFade` and assign it to `MainMenuView` prefab's `_hideTransition` field.
+
 ### 2026-06-07 — MainMenuView juice animations
-Added DOTween entrance/exit to `MainMenuView`: title scale-punch (`OutBack`), buttons stagger scale-in (`OutBack`, 80ms apart), hide collapses everything (`InBack`). All run with `SetUpdate(true)`.
+Added DOTween entrance/exit to `MainMenuView`: title scale-punch (`OutBack`), buttons stagger scale-in (`OutBack`, 80ms apart). All run with `SetUpdate(true)`.
 
 ---
 
@@ -108,3 +116,4 @@ Added DOTween entrance/exit to `MainMenuView`: title scale-punch (`OutBack`), bu
 - DOTween tweens: always `SetUpdate(true)` so they survive `Time.timeScale = 0`
 - Animations inside LayoutGroup: use `DOScale`, never `DOAnchorPosY`/`DOMove`
 - Pre-hide animated views in `Awake` (`localScale = Vector3.zero`) to prevent first-frame flash
+- `UIViewBase.HideAsync` order: UITransition FIRST → `OnHideAsync` SECOND. `OnHideAsync` runs after view is visually hidden — use for cleanup/reset only, not visible animations. Visible hide animations must live in a `UITransition` subclass assigned to `_hideTransition`

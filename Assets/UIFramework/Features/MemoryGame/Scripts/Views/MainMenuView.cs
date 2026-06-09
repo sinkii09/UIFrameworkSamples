@@ -18,7 +18,6 @@ namespace MemoryGame
 
         [Header("Juice")]
         [SerializeField] private float _showDuration = 0.45f;
-        [SerializeField] private float _hideDuration = 0.2f;
         [SerializeField] private float _buttonStagger = 0.08f;
 
         public override UILayer Layer => UILayer.Screen;
@@ -37,7 +36,16 @@ namespace MemoryGame
                 _settingsButton.transform,
                 _quitButton.transform
             };
-            // Pre-hide so the first rendered frame after SetActive(true) is already invisible.
+        }
+
+        // Called by UIViewBase.ShowAsync before SetActive(true) — resets visual state so
+        // the first rendered frame after activation is already at the animation start position.
+        protected override void OnPrepareForShow()
+        {
+            _showSequence?.Kill();
+            _showSequence = null;
+            // ZoomOutFadeTransition leaves root at ZoomOutScale after hide — reset to 1 for next show.
+            transform.localScale = Vector3.one;
             _titleText.transform.localScale = Vector3.zero;
             foreach (var t in _buttonTransforms)
                 t.localScale = Vector3.zero;
@@ -53,12 +61,6 @@ namespace MemoryGame
 
         protected override async UniTask OnShowAsync(CancellationToken ct)
         {
-            // Unconditional reset — covers cancellation-mid-hide leaving stale scale.
-            _showSequence?.Kill();
-            _titleText.transform.localScale = Vector3.zero;
-            foreach (var t in _buttonTransforms)
-                t.localScale = Vector3.zero;
-
             _showSequence = DOTween.Sequence();
             _showSequence.Join(_titleText.transform
                 .DOScale(1f, _showDuration)
@@ -71,58 +73,27 @@ namespace MemoryGame
                                         .SetEase(Ease.OutBack));
             }
 
-            await AwaitTween(_showSequence, ct);
+            await _showSequence.AwaitAsync(ct);
             _showSequence = null;
         }
 
-        protected override async UniTask OnHideAsync(CancellationToken ct)
+        protected override UniTask OnHideAsync(CancellationToken ct)
         {
             _showSequence?.Kill();
             _showSequence = null;
-
-            // Hide sequence is intentionally a local — OnDisable.DOKill() is the backstop
-            // if the object is force-deactivated mid-hide.
-            var seq = DOTween.Sequence();
-            seq.Join(_titleText.transform.DOScale(0f, _hideDuration).SetEase(Ease.InBack));
-            foreach (var t in _buttonTransforms)
-                seq.Join(t.DOScale(0f, _hideDuration).SetEase(Ease.InBack));
-
-            try
-            {
-                await AwaitTween(seq, ct);
-            }
-            finally
-            {
-                // Restore to hidden state so next SetActive(true) doesn't flash at scale 1.
-                _titleText.transform.localScale = Vector3.zero;
-                foreach (var t in _buttonTransforms)
-                    t.localScale = Vector3.zero;
-            }
+            return UniTask.CompletedTask;
         }
 
         private void OnDisable()
         {
             _showSequence?.Kill();
             _showSequence = null;
+            transform.DOKill();
             if (_titleText != null) _titleText.transform.DOKill();
             if (_buttonTransforms != null)
                 foreach (var t in _buttonTransforms)
                     t?.DOKill();
         }
 
-        // Bridges DOTween Tween to UniTask without UNITASK_DOTWEEN_SUPPORT.
-        // Mirrors DOTweenUIAnimator.AwaitTween — SetUpdate(true) keeps it running at timeScale=0.
-        // Registration disposed on complete/kill prevents stale callbacks on DOTween's pooled tweens.
-        private static UniTask AwaitTween(Tween tween, CancellationToken ct)
-        {
-            tween.SetUpdate(true);
-            var tcs = new UniTaskCompletionSource();
-            CancellationTokenRegistration reg = default;
-            tween.OnComplete(() => { reg.Dispose(); tcs.TrySetResult(); })
-                 .OnKill(() => { reg.Dispose(); tcs.TrySetCanceled(); });
-            if (ct.CanBeCanceled)
-                reg = ct.Register(() => tween.Kill());
-            return tcs.Task;
-        }
     }
 }

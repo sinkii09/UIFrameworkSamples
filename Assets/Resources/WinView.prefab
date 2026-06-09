@@ -733,12 +733,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a2dbc84fcb47394b871f8163e70fade, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIFramework.MemoryGame::MemoryGame.WinView
-  _showTransition: {fileID: 11400000, guid: 0ea58c6cfe04bba42952aa3364398a47, type: 2}
-  _hideTransition: {fileID: 11400000, guid: 0ea58c6cfe04bba42952aa3364398a47, type: 2}
+  _showTransition: {fileID: 0}
+  _hideTransition: {fileID: 0}
   _movesText: {fileID: 6056910415328089192}
   _timeText: {fileID: 6881967882054244516}
   _playAgainButton: {fileID: 3079415960802517919}
   _mainMenuButton: {fileID: 5998470038904580446}
+  _panel: {fileID: 2918338127749435365}
+  _titleText: {fileID: 527176365646150673}
 --- !u!1 &6793966465863892895
 GameObject:
   m_ObjectHideFlags: 0

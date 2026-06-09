@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e62512cfb6e7d074984514349dc63fdb, type: 3}
-  m_Name: SlideTransition
+  m_Name: SlideOutTransition
   m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.SlideTransition
-  Duration: 0.25
-  EaseType: 6
+  Duration: 0.5
+  EaseType: 5
   Direction: 0
-  SlideDistance: 100
+  SlideDistance: 500

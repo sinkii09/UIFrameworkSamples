@@ -854,7 +854,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Sinkii09.UIFramework.Samples::UIFrameworkSamples.SettingsView
   _showTransition: {fileID: 11400000, guid: 0ea58c6cfe04bba42952aa3364398a47, type: 2}
-  _hideTransition: {fileID: 11400000, guid: 0ea58c6cfe04bba42952aa3364398a47, type: 2}
+  _hideTransition: {fileID: 11400000, guid: 3adda5c550ece8d42ac26376131afc7b, type: 2}
   _sfxToggle: {fileID: 8036503036697686255}
   _musicToggle: {fileID: 2357234511825333210}
   _closeButton: {fileID: 6960658452308849553}

@@ -30,11 +30,10 @@ namespace MemoryGame
             TimeText.Value = $"Time: {UIFormatUtils.FormatTime(args.ElapsedSeconds)}";
         }
 
-        // UINavigator.ChangeStateAsync clears the stack first (removes WinView),
-        // then MemoryGameState.OnEnterAsync shows GameplayView fresh.
         public void OnPlayAgain()
         {
             _sound.PlaySFX(_soundConfig.ButtonClickClip);
+            if (_navigator.IsTransitioning) return;
             _navigator.ChangeStateAsync<MemoryGameState>().Forget();
         }
 

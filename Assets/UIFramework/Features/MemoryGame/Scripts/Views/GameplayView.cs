@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using R3;
 using Sinkii09.UIFramework;
 using TMPro;
@@ -28,6 +30,13 @@ namespace MemoryGame
         [Inject] private IUINavigator _navigator;
 
         private readonly List<CardView> _cardViews = new();
+
+        // Called by UIViewBase.ShowAsync before SetActive(true) — resets root scale so
+        // the first rendered frame after activation is already at the punch-in starting scale.
+        protected override void OnPrepareForShow()
+        {
+            transform.localScale = Vector3.zero;
+        }
 
         // BindViewModel is called once at init, before ShowAsync (before vm.OnShow).
         // Only set up subscriptions here — _game is null until vm.OnShow() runs.
@@ -68,7 +77,7 @@ namespace MemoryGame
         // 900 ms matches the card disappear animation (700 ms) plus a short pause before win screen.
         private async UniTaskVoid ShowWinViewDelayedAsync(WinArgs args)
         {
-            await UniTask.Delay(900, cancellationToken: destroyCancellationToken);
+            await UniTask.Delay(1000, cancellationToken: destroyCancellationToken);
             await _navigator.ShowAsync<WinView, WinArgs>(args);
         }
 
@@ -80,16 +89,41 @@ namespace MemoryGame
         }
 
         // Called after vm.OnShow() — _game is initialized so GetInitialCards() is safe.
-        protected override UniTask OnShowAsync(CancellationToken ct)
+        protected override async UniTask OnShowAsync(CancellationToken ct)
         {
             SpawnGrid(ViewModel);
-            return UniTask.CompletedTask;
+            // Hide cards at zero-scale so they're invisible during the screen entrance punch.
+            // Parent is already fading in via CanvasGroup — no flash occurs.
+            foreach (var card in _cardViews)
+                card.transform.localScale = Vector3.zero;
+
+            try
+            {
+                await transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutBack).AwaitAsync(ct);
+
+                // Stagger cards in after the screen has settled.
+                // SetLink ensures the sequence is killed if the GO is disabled mid-spawn.
+                var seq = DOTween.Sequence().SetLink(gameObject);
+                for (int i = 0; i < _cardViews.Count; i++)
+                    seq.Insert(i * 0.05f, _cardViews[i].transform.DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack));
+                await seq.AwaitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                DestroyCards();
+                throw;
+            }
         }
 
         protected override UniTask OnHideAsync(CancellationToken ct)
         {
             DestroyCards();
             return UniTask.CompletedTask;
+        }
+
+        private void OnDisable()
+        {
+            transform.DOKill();
         }
 
         private void SpawnGrid(GameplayViewModel vm)
