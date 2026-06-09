@@ -851,13 +851,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d25b43c71da1fd4a862235533d8b454, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Sinkii09.UIFramework.Samples::UIFrameworkSamples.SettingsView
-  _showTransition: {fileID: 11400000, guid: 0ea58c6cfe04bba42952aa3364398a47, type: 2}
-  _hideTransition: {fileID: 11400000, guid: 3adda5c550ece8d42ac26376131afc7b, type: 2}
+  m_Name:
+  m_EditorClassIdentifier: MemoryGame::MemoryGame.SettingsView
+  _showTransition: {fileID: 0}
+  _hideTransition: {fileID: 0}
   _sfxToggle: {fileID: 8036503036697686255}
   _musicToggle: {fileID: 2357234511825333210}
   _closeButton: {fileID: 6960658452308849553}
+  _panel: {fileID: 5011881437317286573}
 --- !u!1 &4837166418119722304
 GameObject:
   m_ObjectHideFlags: 0

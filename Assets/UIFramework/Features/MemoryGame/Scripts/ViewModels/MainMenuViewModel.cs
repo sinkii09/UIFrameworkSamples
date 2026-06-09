@@ -49,7 +49,6 @@ namespace MemoryGame
         public void RequestQuit()
         {
             _sound.PlaySFX(_soundConfig.ButtonClickClip);
-            Debug.Log("[Sample] Quit requested");
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
