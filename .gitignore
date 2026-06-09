@@ -85,6 +85,8 @@ __pycache__/
 
 # Project-specific
 repomix-output.xml
+Build.zip
+/Data/
 .serena/cache
 screenshots/
 docs/screenshots/
