@@ -12,8 +12,6 @@ namespace MemoryGame
         private readonly ISoundService _sound;
         private readonly SoundConfig _soundConfig;
 
-        public ReactiveProperty<string> Title { get; } = new("Main Menu");
-
         [Inject]
         public MainMenuViewModel(IUINavigator navigator, ISoundService sound, SoundConfig soundConfig)
         {

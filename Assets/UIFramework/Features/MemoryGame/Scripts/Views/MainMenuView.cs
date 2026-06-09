@@ -53,7 +53,6 @@ namespace MemoryGame
 
         protected override void BindViewModel(MainMenuViewModel vm)
         {
-            vm.Title.BindToText(_titleText).AddTo(ref _showDisposables);
             _playButton.BindButton(vm.RequestPlay, ref _showDisposables);
             _settingsButton.BindButton(vm.RequestSettings, ref _showDisposables);
             _quitButton.BindButton(vm.RequestQuit, ref _showDisposables);
