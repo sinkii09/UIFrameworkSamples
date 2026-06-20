@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9e67269c745f9646af56b987a7b4477, type: 3}
+  m_Name: weapon_lv2
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.ShopItemConfig
+  Id: weapon_lv2
+  DisplayName: Weapon Lv2
+  Description: Doubles shot spread.
+  CoinCost: 100
+  ItemType: 1
+  PreviewSprite: {fileID: 0}

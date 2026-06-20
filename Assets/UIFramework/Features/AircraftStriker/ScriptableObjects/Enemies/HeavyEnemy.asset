@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d752576e3a6cc1f4c91468d02b89337b, type: 3}
+  m_Name: HeavyEnemy
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.EnemyConfig
+  Type: 2
+  MaxHealth: 10
+  MoveSpeed: 1
+  ScoreValue: 35
+  PickupDropChance: 0.3
+  FirePattern: {fileID: 11400000, guid: e9270d47e44bc4e439a4352f03f89c1d, type: 2}

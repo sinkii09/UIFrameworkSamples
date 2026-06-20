@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81ebb38f47c37314799d34a1589e554d, type: 3}
+  m_Name: Wave06
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.WaveConfig
+  Enemies:
+  - EnemyConfig: {fileID: 11400000, guid: 8cc0a99f84f618c4fbbcd72b116d5197, type: 2}
+    Count: 10
+    SpawnInterval: 0.6
+    Formation: 0
+    HoldPositionViewport: {x: 0.5, y: 0.82}
+  - EnemyConfig: {fileID: 11400000, guid: d9127572706847e488c25b17e577269a, type: 2}
+    Count: 2
+    SpawnInterval: 2
+    Formation: 4
+    HoldPositionViewport: {x: 0.5, y: 0.65}
+  PreWaveDelay: 1.5
+  IsBossWave: 0
+  BossConfig: {fileID: 0}
+  BossPhase1Patterns: []
+  BossPhase2Patterns: []
+  BossPhase3Patterns: []

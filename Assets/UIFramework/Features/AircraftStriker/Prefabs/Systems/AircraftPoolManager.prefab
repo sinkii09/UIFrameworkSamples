@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8243672625178524052
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4690352842973247769}
+  - component: {fileID: 3297522161380398810}
+  m_Layer: 0
+  m_Name: AircraftPoolManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4690352842973247769
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8243672625178524052}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3297522161380398810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8243672625178524052}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e10b048aa584f94e8be2e426cd38e02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.AircraftPoolManager
+  _bulletPrefabs:
+  - {fileID: 4767397632352111049, guid: 2297fae62d1da8e4ab7e2b47c9661174, type: 3}
+  - {fileID: 5549911351649397582, guid: 791c3761dd5372445a1969c17c46bcdf, type: 3}
+  - {fileID: 6543393768293232512, guid: bb0b532041d74654193c34d5a2c6381b, type: 3}
+  - {fileID: 9005120239592496232, guid: bf6a7513dc31cce42b32717454e4a35c, type: 3}
+  - {fileID: 1225915828934861309, guid: 3cc43bbefbaf32648b263ff682b72190, type: 3}
+  - {fileID: 5713528877502509682, guid: c9768402a3ab858479289e9230d2051b, type: 3}
+  _bulletCapacities: 1e000000500000005000000032000000140000003c000000
+  _basicEnemyPrefab: {fileID: 7868064365815887029, guid: d3808be005d90374d8eed6fe37e62deb, type: 3}
+  _speedEnemyPrefab: {fileID: 1400033497354336023, guid: c5eeda8b2001c7f489e73764e1afa0d0, type: 3}
+  _heavyEnemyPrefab: {fileID: 3290099577092835725, guid: 37ba78d174e902548a7b42731e5939be, type: 3}
+  _bossPrefab: {fileID: 350422683108060283, guid: 7052d2c7dd7dfa3478a1d6b1a70eb731, type: 3}
+  _healthPickupPrefab: {fileID: 5035842667942489418, guid: 4cf5f395797a4b4468d4dc4510fcfdab, type: 3}
+  _shieldPickupPrefab: {fileID: 2773960730581541189, guid: 09857d02a75f6274187758175eda7b3e, type: 3}
+  _scoreBoostPickupPrefab: {fileID: 138885133327961457, guid: 6266534ccab9e4e4d99adf974893f587, type: 3}
+  _smallExplosionPrefab: {fileID: 2321325809519327929, guid: ef40a3dd9df2f1e4aadb64b54e738af7, type: 3}
+  _largeExplosionPrefab: {fileID: 8138801364309763717, guid: c0c5ae366a9dc394988661e6bf793258, type: 3}
+  _enemyCapacity: 20
+  _pickupCapacity: 10
+  _vfxCapacity: 20

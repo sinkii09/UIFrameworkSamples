@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13a8908f920e23a4ab9f414eca5e4a3e, type: 3}
+  m_Name: WaveDatabase
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.WaveDatabase
+  Waves:
+  - {fileID: 11400000, guid: 6169bf6932b48194d84ce3c9be827d09, type: 2}
+  - {fileID: 11400000, guid: cbfab6bcbc38bc743a2ca2cc375be7d6, type: 2}
+  - {fileID: 11400000, guid: c308b2ee31ff5f44a97825f2501d60fa, type: 2}
+  - {fileID: 11400000, guid: 6f9d0d5499c26074da373ef897bdc887, type: 2}
+  - {fileID: 11400000, guid: 40564f96e9f7c1248aa507fea3fe97c7, type: 2}
+  - {fileID: 11400000, guid: b49c38bf3447f2e4dafe2993025138ce, type: 2}
+  - {fileID: 11400000, guid: 3aebed778997f3940b06bdb4204930b2, type: 2}
+  - {fileID: 11400000, guid: 3f73332974b625246bd9181014315619, type: 2}
+  - {fileID: 11400000, guid: f5b48d21705c5054c88d9fa814720813, type: 2}
+  - {fileID: 11400000, guid: 2438e06197d838a44afed33670451799, type: 2}
+  LoopAfterFinal: 1

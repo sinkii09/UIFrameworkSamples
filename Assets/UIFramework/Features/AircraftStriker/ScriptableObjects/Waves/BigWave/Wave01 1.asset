@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81ebb38f47c37314799d34a1589e554d, type: 3}
+  m_Name: Wave01 1
+  m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.WaveConfig
+  Enemies:
+  - EnemyConfig: {fileID: 11400000, guid: 9e0b02ce7a9e77f4cb51dcb582eb1e4e, type: 2}
+    Count: 1
+    SpawnInterval: 1
+    Formation: 0
+    HoldPositionViewport: {x: 0.5, y: 0.8}
+  PreWaveDelay: 1
+  IsBossWave: 1
+  BossConfig: {fileID: 11400000, guid: 9e0b02ce7a9e77f4cb51dcb582eb1e4e, type: 2}
+  BossPhase1Patterns:
+  - {fileID: 11400000, guid: 7901d578941b15c48a3a2cdf718baf5a, type: 2}
+  BossPhase2Patterns:
+  - {fileID: 11400000, guid: 20be9f41db1caa94ab73a91d0713f8e2, type: 2}
+  BossPhase3Patterns:
+  - {fileID: 11400000, guid: a065ea7a543243e448b059fa62067655, type: 2}
+  - {fileID: 11400000, guid: a10b14f98d2bf2e4ab2f7664585bbec1, type: 2}
