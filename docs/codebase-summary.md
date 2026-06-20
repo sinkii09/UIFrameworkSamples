@@ -14,7 +14,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 
 **Scripting defines required:**
 - `VCONTAINER_UNITASK_INTEGRATION` — enables VContainer async scope support
-- `UNITASK_DOTWEEN_SUPPORT` — **NOT defined**; DOTween↔UniTask bridged manually via `UniTaskCompletionSource` in `DOTweenUIAnimator.AwaitTween`
+- `UNITASK_DOTWEEN_SUPPORT` — **NOT defined**; DOTween↔UniTask bridged manually via `UniTaskCompletionSource` in `TweenExtensions.AwaitAsync` (extension method on `Tween`)
 
 ---
 
@@ -26,7 +26,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/MVVM/UIView<T>.cs` | Base view — binds ViewModel, exposes `OnShowAsync`/`OnHideAsync` |
 | `Runtime/Core/MVVM/UIViewBase.cs` | Caches `CanvasGroup`, `RectTransform`; drives show/hide lifecycle |
 | `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
-| `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Bridges `Tween→UniTask` without `UNITASK_DOTWEEN_SUPPORT` using `UniTaskCompletionSource` + `CancellationTokenRegistration` (disposed on complete/kill to prevent stale callbacks on pooled tweens) |
+| `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
 
 ### Installer Wizard
@@ -133,6 +133,32 @@ Features/AircraftStriker/
 ---
 
 ## Recent Changes
+
+### 2026-06-20 — UIFramework Phase 2 Bug Fixes (remaining CRITICALs + W13)
+**`GameLifecycleManager.cs`** — Added `IUINavigator` injection. `RestartCurrentStateAsync` now calls `_navigator.CloseAllAsync()` between `OnExitAsync` and `OnEnterAsync`, clearing any views left on the nav stack by `OnExitAsync`. If `OnExitAsync` already cleared the stack, `CloseAllAsync` is a no-op.
+
+**`UIStateMachine.cs`** — Rollback split into two cases: `OperationCanceledException` restores `_currentState = previous` (cancellation aborted before commit; previous is still valid); all other exceptions after `OnExitAsync` succeeded set `_currentState = null` (previous already exited; restoring it would cause a double-exit on the next transition). `exitCompleted` bool tracks whether `OnExitAsync` ran.
+
+**`UIViewFactory.cs`** — Added `_pending: Dictionary<Type, UniTaskCompletionSource<IUIView>>`. If `CreateGenericAsync` for a type is in-flight, a second concurrent caller awaits the first result instead of instantiating a duplicate GameObject. Root cause: main-thread async interleaving (not threading). `_pending` entries are removed in a `finally` block.
+
+**`ViewModelBase.cs`** — Added `if (_disposed) return;` guard at top of `NotifyHide()` (hygiene: prevents post-dispose DisposableBag resurrection in edge-case VContainer lifetime scenarios).
+
+**`ScaleTransition.cs`, `ZoomOutFadeTransition.cs`** — Added `OnKill` restore guards matching `SlideTransition` pattern. Cancelled transitions now restore scale/alpha to their pre-animation state instead of leaving the transform at a mid-tween position.
+
+### 2026-06-20 — UIFramework Phase 1 Bug Fixes (5 CRITICALs from adversarial review)
+**Root cause:** Adversarial review of all 67 Runtime files found 9 critical bugs; Phase 1 addresses the 5 with highest correctness impact.
+
+**`IViewModel.cs` / `ViewModelBase.cs` / `UIView.cs`** — Renamed `IViewModel.Show()` → `IViewModel.NotifyHide()`. The method was named `Show` but executed hide-side teardown (`OnHide()` + `_showDisposables.Dispose()`). Any external `IViewModel` implementor that read the interface assumed `Show()` = init, breaking teardown. `UIView.HideAsync` caller updated.
+
+**`UIView.cs`** — Pre-await `if (_viewModel == null) return` in `HideAsync` was silently skipping `base.HideAsync`, leaving `IsVisible = true` and the GameObject active. Changed to `Debug.LogError` only — `base.HideAsync` always runs. Post-await null guard preserved for `FactoryReset` race.
+
+**`NavigationStack.cs`** — `PushAsync` now awaits `view.ShowAsync(ct)` **before** adding to `_views`. Failure or cancellation leaves the stack unchanged and re-throws. Prevents phantom stack entries from cancelled shows.
+
+**`UIViewRegistry.cs`** — Added `HashSet<string>` and `HashSet<Type>` duplicate-key detection in `AutoRegister`. Collisions now produce `Debug.LogError` and skip the duplicate. `ResetOnDomainReload` clears both sets.
+
+**`DOTweenUIAnimator.cs`** — Added `.SetLink(viewBase.gameObject)` on every transition tween before awaiting. Removed private `AwaitTween` duplicate — now uses `TweenExtensions.AwaitAsync`. Orphaned tweens on force-destroy are now killed automatically by DOTween via the `SetLink` binding.
+
+**Note for custom view code:** `TweenExtensions.AwaitAsync` does NOT call `SetLink` — callers writing DOTween Sequences in `OnShowAsync`/`OnHideAsync` must chain `.SetLink(gameObject)` themselves.
 
 ### 2026-06-20 — UIFramework: SetScopeContainer + RestartCurrentStateAsync additions
 **`IUIViewFactory.cs` / `UIViewFactory.cs`** — Added `SetScopeContainer(IObjectResolver)` / `ResetScopeContainer(IObjectResolver?)` to support game-specific DI child scopes. A game `LifetimeScope` calls `SetScopeContainer(Container)` after `base.Awake()` so ViewModels created in that scene can resolve game-level services (e.g. `IProgressionService`, `WaveManager`) from the game scope rather than the framework root scope. `ResetScopeContainer(expected)` guards against stale refs when a reloaded scene's `OnDestroy` fires after a newer scope has already set a different override.
