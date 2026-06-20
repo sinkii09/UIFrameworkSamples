@@ -79,7 +79,163 @@ Features/MemoryGame/
 
 ---
 
+## Aircraft Striker 2D Game (`Assets/UIFramework/Features/AircraftStriker/`)
+
+**Assembly:** `UIFramework.AircraftStriker` — zero coupling with MemoryGame.
+
+### Folder Structure
+```
+Features/AircraftStriker/
+├── Scripts/
+│   ├── Bootstrap/          AircraftLifetimeScope, AircraftGameBootstrap
+│   ├── States/             AircraftGameplayState (IGameState)
+│   ├── Logic/              Enums, SOs (BulletConfig, BulletPatternConfig, EnemyConfig,
+│   │                        WaveConfig, WaveDatabase, ShopCatalog), PlayerData,
+│   │                        CheckpointState, GameScore, BulletOwner
+│   ├── Pooling/            PooledObject (base), AircraftPoolManager
+│   ├── Input/              AircraftInputHandler (IDragHandler)
+│   ├── Gameplay/           BulletController, BulletPatternExecutor, GrazeDetector,
+│   │                        EnemyController, BossController, PickupController,
+│   │                        PlayerController, BackgroundScrollController,
+│   │                        WaveManager, GameplayController, CheckpointManager
+│   ├── Progression/        IProgressionService, PlayerPrefsProgressionService, ShopService
+│   ├── Audio/              IAircraftSoundService, SFXType, AircraftSoundManager
+│   ├── ViewModels/         AircraftMainMenuViewModel, AircraftHUDViewModel,
+│   │                        AircraftHUDChannel, AircraftGameOverViewModel,
+│   │                        AircraftVictoryViewModel, AircraftPauseViewModel,
+│   │                        ShopViewModel, SkinSelectionViewModel,
+│   │                        GameOverArgs, VictoryArgs
+│   └── Views/              AircraftMainMenuView, AircraftHUDView, AircraftGameOverView,
+│                            AircraftVictoryView, AircraftPauseView, ShopView,
+│                            SkinSelectionView, ShopItemRow, SkinItemRow
+├── Prefabs/                Player/, Enemies/, Projectiles/, Pickups/, VFX/
+├── Resources/              UIFramework view prefabs (loaded by class name)
+├── ScriptableObjects/      Waves/, Shop/
+└── Scenes/                 AircraftGame.unity  ← must be created manually
+```
+
+### Key Architecture Notes
+- **AircraftHUDChannel** — Singleton bridge solving UIViewFactory child-scope isolation: `GameplayController` writes to channel, `AircraftHUDViewModel` proxies its `ReactiveProperty<T>` fields. Child scope inherits parent singleton so the channel is visible to both sides.
+- **CheckpointManager** — Pure C# state machine. Saves before each boss wave; `RequestRestore()` sets `IsPendingRestore` flag consumed by `GameplayController.StartGame()` on retry.
+- **WaveManager** — MonoBehaviour (needs coroutines). Receives `GameplayController` via `StartWaves(this)` method, not constructor, to break circular DI dependency.
+- **BulletPatternExecutor** — Pure C# stateless. Supports Ring/SpiralCW/SpiralCCW/AimedFan/BurstFan/Wall/DualSpiral patterns; spiral uses `Time.time * SpiralStepDegrees`.
+- **PooledObject.OnReturn** — wired in `AircraftPoolManager.CreatePool<T>` via `createFunc`: `obj.OnReturn += p => { if (p.gameObject.activeSelf) pool?.Release((T)p); }`.
+- **View animations** — All views use `OnPrepareForShow()` + `OnShowAsync()` DOTween pattern (same as MemoryGame). GameOver/Victory: panel scale-in + staggered stat labels + DOVirtual.Float score count-up.
+
+### Scene Setup (Manual — not yet done)
+1. Create `AircraftGame.unity`
+2. Add `AircraftLifetimeScope` root GO; set parent scope to `UIFrameworkLifetimeScope`
+3. Assign all `[SerializeField]` MonoBehaviours and ScriptableObjects in Inspector
+4. Create prefabs for all `BulletController`, `EnemyController`, `BossController`, `PickupController` types
+5. Create `WaveDatabase` SO with 10 waves (boss at wave 5 and 10)
+6. Create `ShopCatalog` SO with weapon upgrade, bonus HP, skin unlock items
+
+---
+
 ## Recent Changes
+
+### 2026-06-20 — UIFramework: SetScopeContainer + RestartCurrentStateAsync additions
+**`IUIViewFactory.cs` / `UIViewFactory.cs`** — Added `SetScopeContainer(IObjectResolver)` / `ResetScopeContainer(IObjectResolver?)` to support game-specific DI child scopes. A game `LifetimeScope` calls `SetScopeContainer(Container)` after `base.Awake()` so ViewModels created in that scene can resolve game-level services (e.g. `IProgressionService`, `WaveManager`) from the game scope rather than the framework root scope. `ResetScopeContainer(expected)` guards against stale refs when a reloaded scene's `OnDestroy` fires after a newer scope has already set a different override.
+
+**`GameLifecycleManager.cs`** — Added `RestartCurrentStateAsync()`: exits then re-enters the current state in-place, bypassing the state machine's same-state guard. Required for Retry/Restart from pause — `ChangeStateAsync<AircraftGameplayState>()` is silently rejected when already in `AircraftGameplayState`.
+
+### 2026-06-20 — Aircraft Striker: two lives lost on one hit + i-frames
+**Bug:** One burst/spread enemy shot pattern consumed two player lives (two `BulletController.OnTriggerEnter2D` calls reached `OnPlayerHit()` in the same physics step before either returned).
+**Root cause:** `GameplayController.OnPlayerHit()` only short-circuited when `_isGameActive = false` (death state). While the player was alive with 2+ lives, both hits ran `TakeDamage()` concurrently.
+**Fix:**
+- `GameplayController.cs` — Added `_invincibleUntil` (float timestamp) + `IsInvincible` property. `OnPlayerHit()` guards with `if (!_isGameActive || IsInvincible) return`. After a surviving hit, sets `_invincibleUntil = Time.time + 1.5f`. On death, i-frames are NOT granted (`_isGameActive = false` stops all further processing). `StartGame`/`StopGame` reset `_invincibleUntil = 0f`.
+- `PlayerController.cs` — `Update()` blinks `_spriteRenderer` at 10 Hz during i-frames: `enabled = !_gameplay.IsInvincible || (Time.time % 0.2f < 0.1f)`. Runs OUTSIDE the `IsGameActive` guard so sprite restores to visible when the game stops.
+**Inspector note:** Assign the player ship's `SpriteRenderer` to `PlayerController._spriteRenderer` field; blink silently no-ops if null.
+
+### 2026-06-20 — Aircraft Striker: GameOver buttons appear too late (~1.9s delay)
+**Bug:** After GameOver view appeared, player had to wait ~2 seconds before Retry/Menu buttons became visible.
+**Root cause:** `AircraftGameOverView.OnShowAsync` inserted `_retryButton` at timestamp `1.9f` and `_menuButton` at `2.0f`, sequentially after a 1.1s score count-up starting at `0.72f`. Total sequence: ~2.3s before any button.
+**Fix:** Parallelized button entrance with score count-up — `_retryButton` moved to `0.80f`, `_menuButton` to `0.90f`. Score count-up shortened from `1.1f` to `0.7f`. Total sequence reduced to ~1.42s; buttons appear at ~0.8s.
+
+### 2026-06-20 — Aircraft Striker: PauseView does not pause game / restart broken
+**Bug 1:** Game continued running at full speed while PauseView was open (enemies moved, bullets fired).
+**Bug 2:** Restart button in PauseView could silently fail — no error callback on `.Forget()`. Menu button used raw navigator calls (`CloseAllAsync` + `ShowAsync<AircraftMainMenuView>`) instead of the state machine, leaving `_currentState` stale — same bypass bug already fixed in GameOver/Victory ViewModels.
+**Root cause:** `AircraftPauseView` had no `Time.timeScale` management. All three exit paths (Resume/Restart/Menu) never restored `timeScale`, which would also freeze DOTween hide animations once the game-freeze was added.
+**Fix:**
+- `AircraftPauseView.cs` — Override `OnShowAsync` to set `Time.timeScale = 0f` AFTER the entrance animation completes (so the slide-in plays at normal speed).
+- `AircraftPauseViewModel.cs` — All three handlers restore `Time.timeScale = 1f` synchronously BEFORE any async call (so hide animations DOTween-animate at normal speed). `GoToMainMenuAsync()` now calls `_lifecycle.ChangeStateAsync<AircraftMainMenuState>()` instead of raw navigator. All `.Forget()` calls have error callbacks.
+
+### 2026-06-20 — Aircraft Striker: pooled objects visible on screen after returning to main menu
+**Bug:** After game-over → "Return to Menu", enemies, boss, bullets, and pickups remained visible on the main menu screen.
+**Root cause:** `GameplayController.StopGame()` cancelled CancellationTokenSources and stopped wave spawning but never returned active pool objects to their pools. Pool objects are only deactivated (`SetActive(false)`) when individually released via `pool.Release()` — which only fires when an object dies and calls `ReturnToPool()`. Live enemies at game-over just froze in place, still active.
+**Fix:**
+- `PooledObject.cs` — `ReturnToPool()` changed from `protected` to `public` so the pool manager can bulk-call it.
+- `AircraftPoolManager.cs` — Added `ReturnAll()`: uses `GetComponentsInChildren<PooledObject>(false)` (snapshots active children) then calls `ReturnToPool()` on each. Pool's `OnReturn` handler guards against double-release via `if (p.gameObject.activeSelf)`. VFX `ParticleSystem` handled separately (stop + deactivate) since they don't extend `PooledObject`.
+- `GameplayController.cs` — `StopGame()` calls `_pool.ReturnAll()` after stopping waves.
+
+### 2026-06-20 — Aircraft Striker: Return-to-Menu skips state machine, Play Again silently blocked
+**Bug:** After game over or victory, pressing "Return to Menu" closed all views but left `UIStateMachine._currentState` pointing to `AircraftGameplayState`. Pressing "Play Again" from MainMenu triggered the guard `if (currentState == targetState) return;` silently without transitioning.
+**Root cause:** `AircraftGameOverViewModel` and `AircraftVictoryViewModel` called `_navigator.CloseAllAsync()` + `_navigator.ShowAsync<AircraftMainMenuView>()` directly, bypassing the state machine. State machine never knew the game had ended, so `_currentState` remained `AircraftGameplayState`.
+**Fix:** Introduced new `AircraftMainMenuState : IGameState`. Both ViewModels now call `_lifecycle.ChangeStateAsync<AircraftMainMenuState>()` instead. This triggers `AircraftGameplayState.OnExitAsync` (which stops the game loop, destroys the player, closes gameplay views), properly updates `_currentState` to `AircraftMainMenuState`, and correctly transitions to the menu. Playing again now calls `_lifecycle.ChangeStateAsync<AircraftGameplayState>()` which properly exits the menu state and enters gameplay.
+**Files changed (5):**
+- `AircraftMainMenuState.cs` (new) — IGameState impl; `OnEnterAsync` shows MainMenu, `OnExitAsync` does nothing
+- `AircraftLifetimeScope.cs` — registers `AircraftMainMenuState`
+- `AircraftGameBootstrap.cs` — initializes `AircraftMainMenuState` as the initial state instead of showing the view directly
+- `AircraftGameOverViewModel.cs` — `GoToMainMenuAsync()` now calls `_lifecycle.ChangeStateAsync<AircraftMainMenuState>()`
+- `AircraftVictoryViewModel.cs` — `GoToMainMenuAsync()` now calls `_lifecycle.ChangeStateAsync<AircraftMainMenuState>()`
+
+### 2026-06-16 — Aircraft Striker: HP → lives system
+**Bug:** Any boss bullet with `BulletConfig.Damage ≥ 3` (= MaxHealth) killed the player instantly in one hit.
+**Root cause:** `PlayerData.TakeDamage(int amount)` subtracted the raw damage amount. No per-hit cap meant a boss bullet with `Damage=3` reduced `CurrentHealth` from 3 to 0 immediately.
+**Redesign:** Converted from HP system to lives system — any hit always costs exactly 1 life regardless of bullet damage.
+**Files changed (12):**
+- `PlayerData.cs` — renamed `MaxHealth`→`MaxLives`, `CurrentHealth`→`Lives`; `TakeDamage()` now takes no param and decrements 1 life; `RestoreHealth`→`RestoreLife`
+- `CheckpointState.cs` — renamed `HealthAtCheckpoint`→`LivesAtCheckpoint`
+- `AircraftHUDChannel.cs` — renamed reactive props `CurrentHealth`→`Lives`, `MaxHealth`→`MaxLives`; updated `Push()`
+- `AircraftHUDViewModel.cs` — renamed proxy properties
+- `AircraftHUDView.cs` — updated `vm.Lives` / `vm.MaxLives` binding
+- `GameplayController.cs` — `OnPlayerHit()` now no-param; calls `TakeDamage()` no-param; `RestoreLife(1)` on health pickup; `LoadBonusLives()`
+- `BulletController.cs` — calls `_gameplay.OnPlayerHit()` with no argument (damage param removed)
+- `IProgressionService.cs` — `LoadBonusHealth()` → `LoadBonusLives()`
+- `PlayerPrefsProgressionService.cs` — impl renamed accordingly
+- `ShopItemType.cs` — `BonusHealth` → `BonusLives` (same ordinal, no asset migration needed)
+- `AircraftStrikerSetupWizard.cs` — seed data updated to "Extra Life" / "Start with +1 max life."
+- `bonus_hp.asset` — DisplayName "Extra Life", Description "Start with +1 max life."
+
+### 2026-06-15 — Aircraft Striker: game-over guard (player can still play after game over)
+**Bug:** After game-over overlay appeared, player could still move, shoot, graze, collect pickups, and enemy bullets could trigger duplicate `HandleGameOver` calls.
+**Root cause:** No `_isGameActive` flag in `GameplayController`. `OnPlayerHit` had no re-entry guard. `WaveManager.StopWaves()` only called from `StopGame()` (on Retry/Menu click), not on player death.
+**Fix:**
+- `GameplayController.cs` — Added `_isGameActive` bool + `IsGameActive` property. `OnPlayerHit` guards with `if (!_isGameActive) return`. On player death: sets `_isGameActive = false` + calls `StopWaves()` synchronously before `HandleGameOver().Forget()` (eliminates same-frame multi-hit window). `OnAllWavesComplete` mirrors the same pattern. `StartGame`/`StopGame` set the flag.
+- `PlayerController.cs` — `Update()` and `OnTriggerEnter2D()` both check `!_gameplay.IsGameActive` — stops movement, shooting, and graze registration after game over.
+- `PickupController.cs` — `OnTriggerEnter2D()` checks `!_gameplay.IsGameActive` — prevents pickups from mutating final score during overlay.
+
+### 2026-06-15 — Aircraft Striker: player ship runtime spawn/destroy + session CTS race fix
+**Changes:**
+- `AircraftGameplayState.cs` — `PlayerController` is now spawned via `Object.Instantiate(_playerShipPrefab)` in `OnEnterAsync` and destroyed in `OnExitAsync`. Camera-relative spawn position (`-camHalf * 0.7f`). Null/re-entrancy guards added. Eliminates Bug 2 (prefab asset reference assigned as scene instance).
+- `GameplayController.cs` — Added `_sessionCts` (`CancellationTokenSource`) created per `StartGame()`, cancelled/disposed in `StopGame()`. `HandleGameOver` and `ShowVictoryAsync` now pass this token to `ShowAsync`, so stale game-over/victory overlays are cancelled if the player retries before the animation finishes.
+- `AircraftLifetimeScope.cs` — `_playerController` Inspector field is now intentionally a **prefab asset reference** (not scene instance). The `RegisterInstance` registers it as a spawn template. Updated comment to reflect this.
+**Inspector note:** Assign `PlayerShip.prefab` from the Project window directly to `AircraftLifetimeScope._playerController` — a prefab reference is now correct (opposite of the previous "scene instance" instruction).
+
+### 2026-06-15 — Post-review corrections to player spawn and session lifecycle
+**Changes (second-pass review corrections):**
+- `GameplayController.cs` — implements `IDisposable` (VContainer auto-calls on scope teardown); `_currentWave`/`_isBossWave` now initialized BEFORE `StartWaves()` in both branches (previously set after — caused HUD to flash wave 1 on checkpoint restore); progression saves (`SaveHighScore`, `SaveCoins`) moved here from ViewModels — saves happen at game-over/victory determination time, not at overlay display time.
+- `AircraftGameOverViewModel.cs`, `AircraftVictoryViewModel.cs` — `Initialize()` now display-only (reads `LoadHighScore` for BestScore display, no more writes). `AircraftVictoryViewModel.OnPlayAgainPressed` fixed to use `RestartCurrentStateAsync` (was `ChangeStateAsync<AircraftGameplayState>` — silently dropped by same-state guard).
+- `UIViewFactory.cs` (framework) — added `ct.ThrowIfCancellationRequested()` at the start of `CreateGenericAsync` — prevents `Initialize(args)` from running on cached views when the session CT is already cancelled (fast-retry scenario).
+
+### 2026-06-13 — Aircraft Striker 2D game — full implementation (Phases 1–8)
+**Feature:** Complete standalone aircraft shooter game built on Sinkii09 UIFramework. 60 scripts across Bootstrap, Logic, Pooling, Input, Gameplay, Progression, Audio, ViewModels, Views.
+**Key gotchas discovered:**
+- `UIViewFactory` creates child scopes per view → pre-registering a ViewModel as parent Singleton creates two instances. Fixed with `AircraftHUDChannel` singleton bridge.
+- `PooledObject.ReturnToPool()` fires `OnReturn` event but nobody subscribes unless wired in `createFunc`. Fixed in `AircraftPoolManager`.
+- `WaveManager` receives `GameplayController` via method (`StartWaves(this)`) to break circular DI.
+- `DOKill()` returns `int`, not `Transform` — cannot chain `.DOPunchScale()` on it. Must split into two statements.
+**Status:** All C# code complete. Editor Setup Wizard created — run it once in Unity to generate all assets automatically.
+
+### 2026-06-13 — Aircraft Striker Editor Setup Wizard
+**Feature:** `Assets/UIFramework/Features/AircraftStriker/Scripts/Editor/AircraftStrikerSetupWizard.cs`
+**What it does:** Menu `AircraftStriker > Setup Wizard > Run Full Setup` generates every asset in one click:
+- 6 BulletConfig SOs, 9 BulletPatternConfig SOs, 4 EnemyConfig SOs, 10 WaveConfig SOs, WaveDatabase, 5 ShopItemConfig SOs, ShopCatalog
+- 6 bullet prefabs, 4 enemy prefabs, 3 pickup prefabs, 2 VFX ParticleSystem prefabs
+- System prefabs: AircraftPoolManager (all arrays wired), WaveManager, BackgroundScroll, AircraftSoundManager, PlayerShip (with PlayerHitbox child), AircraftInputHandler
+- 9 view/row prefabs in `Assets/Resources/AircraftStriker/` with all SerializeField refs wired
+**Also patched:** `UIViewFactory.InstantiateViewAsync<TView>` now checks `[UIViewKey]` attribute first (supports subfolder paths for all registration paths). All 7 view classes have `[UIViewKey("AircraftStriker/ClassName")]` + correct `UILayer` override.
+**Remaining manual step:** Open `AircraftGame.unity`, assign prefabs/SOs to `AircraftLifetimeScope` in Inspector, add art sprites.
 
 ### 2026-06-08 — MainMenuView animation flash fix
 **Issue:** Buttons visible for one frame before entrance animation started (flash on show).
