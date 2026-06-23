@@ -5,6 +5,7 @@ namespace AircraftStriker
     public class BulletController : PooledObject
     {
         [SerializeField] private BulletConfig _config;
+        [SerializeField] private BulletVFX    _vfx;   // optional — assign after adding [BulletVFX] child
 
         public BulletType   BulletType { get; private set; }
         public BulletOwner  Owner      { get; private set; }
@@ -23,7 +24,13 @@ namespace AircraftStriker
             transform.up   = direction;
         }
 
-        public override void OnGetFromPool() => _elapsed = 0f;
+        public override void OnGetFromPool()
+        {
+            _elapsed = 0f;
+            _vfx?.OnPlay();
+        }
+
+        public override void OnReturnToPool() => _vfx?.OnStop();
 
         private void Update()
         {
@@ -55,10 +62,11 @@ namespace AircraftStriker
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (_config == null || _gameplay == null) return;
+            Vector2 hitPos = transform.position;
 
             if (Owner == BulletOwner.Enemy && other.CompareTag("PlayerHitbox"))
             {
-                _gameplay.OnPlayerHit();
+                _gameplay.OnPlayerHit(hitPos);
                 ReturnToPool();
                 return;
             }
@@ -66,10 +74,10 @@ namespace AircraftStriker
             if (Owner == BulletOwner.Player)
             {
                 var enemy = other.GetComponentInParent<EnemyController>();
-                if (enemy != null) { _gameplay.OnEnemyHit(enemy, _config.Damage); ReturnToPool(); return; }
+                if (enemy != null) { _gameplay.OnEnemyHit(enemy, _config.Damage, hitPos); ReturnToPool(); return; }
 
                 var boss = other.GetComponentInParent<BossController>();
-                if (boss != null) { _gameplay.OnBossHit(boss, _config.Damage); ReturnToPool(); }
+                if (boss != null) { _gameplay.OnBossHit(boss, _config.Damage, hitPos); ReturnToPool(); }
             }
         }
     }

@@ -121,9 +121,10 @@ namespace AircraftStriker
             _patternExecutor.FirePlayer(origin, _playerData.CurrentWeapon, _pool, this);
         }
 
-        public void OnPlayerHit()
+        public void OnPlayerHit(Vector2 hitPos)
         {
             if (!_isGameActive || IsInvincible) return;
+            _pool.SpawnHitEffect(hitPos, HitEffectType.Player);
             _playerData.TakeDamage();
             PushHUDUpdate();
             if (!_playerData.IsAlive)
@@ -138,8 +139,17 @@ namespace AircraftStriker
             _invincibleUntil = Time.time + InvincibleDuration;
         }
 
-        public void OnEnemyHit(EnemyController e, float dmg) => e.TakeDamage(dmg);
-        public void OnBossHit(BossController b,   float dmg) => b.TakeDamage(dmg);
+        public void OnEnemyHit(EnemyController e, float dmg, Vector2 hitPos)
+        {
+            _pool.SpawnHitEffect(hitPos, HitEffectType.Enemy);
+            e.TakeDamage(dmg);
+        }
+
+        public void OnBossHit(BossController b, float dmg, Vector2 hitPos)
+        {
+            _pool.SpawnHitEffect(hitPos, HitEffectType.Boss);
+            b.TakeDamage(dmg);
+        }
 
         public void OnGraze()
         {

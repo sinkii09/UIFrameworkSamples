@@ -61,6 +61,8 @@ MonoBehaviour:
   _scoreBoostPickupPrefab: {fileID: 138885133327961457, guid: 6266534ccab9e4e4d99adf974893f587, type: 3}
   _smallExplosionPrefab: {fileID: 2321325809519327929, guid: ef40a3dd9df2f1e4aadb64b54e738af7, type: 3}
   _largeExplosionPrefab: {fileID: 8138801364309763717, guid: c0c5ae366a9dc394988661e6bf793258, type: 3}
+  _hitEffectPrefab: {fileID: 6525782065691451262, guid: 03a03869287f4fe45853329d3d30eaed, type: 3}
+  _hitEffectCapacity: 30
   _enemyCapacity: 20
   _pickupCapacity: 10
   _vfxCapacity: 20

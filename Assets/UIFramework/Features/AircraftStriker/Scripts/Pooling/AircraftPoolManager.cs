@@ -30,6 +30,10 @@ namespace AircraftStriker
         [SerializeField] private ParticleSystem _smallExplosionPrefab;
         [SerializeField] private ParticleSystem _largeExplosionPrefab;
 
+        [Header("Hit Effect")]
+        [SerializeField] private HitEffect _hitEffectPrefab;
+        [SerializeField] private int _hitEffectCapacity = 30;
+
         [Header("Capacities")]
         [SerializeField] private int _enemyCapacity = 20;
         [SerializeField] private int _pickupCapacity = 10;
@@ -46,6 +50,7 @@ namespace AircraftStriker
         private ObjectPool<PickupController> _scoreBoostPool;
         private ObjectPool<ParticleSystem> _smallVFXPool;
         private ObjectPool<ParticleSystem> _largeVFXPool;
+        private ObjectPool<HitEffect>      _hitEffectPool;
 
         private void Awake()
         {
@@ -128,6 +133,9 @@ namespace AircraftStriker
 
             if (_largeExplosionPrefab   != null) _largeVFXPool   = CreateVFXPool(_largeExplosionPrefab, _vfxCapacity / 2);
             else Debug.LogError("[PoolManager] _largeExplosionPrefab not assigned.", this);
+
+            if (_hitEffectPrefab != null) _hitEffectPool = CreatePool(_hitEffectPrefab, _hitEffectCapacity);
+            else Debug.LogError("[PoolManager] _hitEffectPrefab not assigned — run 'Build Hit Effect Prefab' first.", this);
         }
 
         // === Bullet API ===
@@ -227,6 +235,25 @@ namespace AircraftStriker
             return _largeVFXPool.Get();
         }
         public void ReleaseLargeVFX(ParticleSystem ps) => _largeVFXPool?.Release(ps);
+
+        // === Hit Effect API ===
+
+        private static readonly Color _enemyHitColor  = new Color(1f, 0.42f, 0f);   // orange
+        private static readonly Color _bossHitColor   = new Color(1f, 0.84f, 0f);   // gold
+        private static readonly Color _playerHitColor = new Color(0f, 0.87f, 1f);   // cyan
+
+        public void SpawnHitEffect(Vector3 pos, HitEffectType type)
+        {
+            if (_hitEffectPool == null) return;
+            var fx = _hitEffectPool.Get();
+            var color = type switch
+            {
+                HitEffectType.Boss   => _bossHitColor,
+                HitEffectType.Player => _playerHitColor,
+                _                    => _enemyHitColor
+            };
+            fx.Initialize(pos, color);
+        }
 
         // === Bulk Release ===
 

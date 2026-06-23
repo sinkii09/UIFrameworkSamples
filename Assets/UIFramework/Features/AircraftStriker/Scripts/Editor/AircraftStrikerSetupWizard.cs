@@ -60,7 +60,11 @@ namespace AircraftStriker.Editor
                       "  SOs   → Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/\n" +
                       "  Prefs → Assets/UIFramework/Features/AircraftStriker/Prefabs/\n" +
                       "  Views → Assets/Resources/AircraftStriker/\n" +
-                      "Next: open AircraftGame scene, assign Inspector refs on AircraftLifetimeScope, add art sprites.");
+                      "Next steps:\n" +
+                      "  1. AircraftStriker > Setup Wizard > Rebuild Bullet VFX  (adds particle layers)\n" +
+                      "  2. Open AircraftGame scene, assign Inspector refs on AircraftLifetimeScope\n" +
+                      "  3. Assign Bullet-Additive.mat to particle system renderers for glow\n" +
+                      "  4. Add art sprites to player/enemy prefabs");
         }
 
         // ── FOLDERS ────────────────────────────────────────────────────────────────
