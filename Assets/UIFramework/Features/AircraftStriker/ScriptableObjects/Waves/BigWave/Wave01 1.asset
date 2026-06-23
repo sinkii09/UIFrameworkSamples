@@ -22,9 +22,8 @@ MonoBehaviour:
   IsBossWave: 1
   BossConfig: {fileID: 11400000, guid: 9e0b02ce7a9e77f4cb51dcb582eb1e4e, type: 2}
   BossPhase1Patterns:
-  - {fileID: 11400000, guid: 7901d578941b15c48a3a2cdf718baf5a, type: 2}
+  - {fileID: 11400000, guid: ed73b5c0773a6f141ae7706849af5c5c, type: 2}
   BossPhase2Patterns:
-  - {fileID: 11400000, guid: 20be9f41db1caa94ab73a91d0713f8e2, type: 2}
+  - {fileID: 11400000, guid: 29f85a9e406d34e4890c6d84d6fa1fdd, type: 2}
   BossPhase3Patterns:
-  - {fileID: 11400000, guid: a065ea7a543243e448b059fa62067655, type: 2}
-  - {fileID: 11400000, guid: a10b14f98d2bf2e4ab2f7664585bbec1, type: 2}
+  - {fileID: 11400000, guid: d763c65d5681ab34dbf9f23cc2a8a152, type: 2}

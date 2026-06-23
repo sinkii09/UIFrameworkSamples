@@ -67,10 +67,39 @@ namespace AircraftStriker
                     FireWall(origin, config, pool, gameplay);
                     break;
                 case BulletPatternType.DualSpiral:
+                {
                     float dual = Time.time * config.SpiralStepDegrees;
-                    FireArc(origin, config, dual,         config.SpreadAngle, pool, gameplay);
-                    FireArc(origin, config, dual + 180f,  config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, dual,        config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, dual + 180f, config.SpreadAngle, pool, gameplay);
                     break;
+                }
+                case BulletPatternType.TripleSpiral:
+                {
+                    float ts = Time.time * config.SpiralStepDegrees;
+                    FireArc(origin, config, ts,        config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, ts + 120f, config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, ts + 240f, config.SpreadAngle, pool, gameplay);
+                    break;
+                }
+                case BulletPatternType.CrossSpiral:
+                {
+                    float cs = Time.time * config.SpiralStepDegrees;
+                    FireArc(origin, config, cs,        config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, cs + 90f,  config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, cs + 180f, config.SpreadAngle, pool, gameplay);
+                    FireArc(origin, config, cs + 270f, config.SpreadAngle, pool, gameplay);
+                    break;
+                }
+                case BulletPatternType.Pincer:
+                    FirePincer(origin, config, playerPos, pool, gameplay);
+                    break;
+                case BulletPatternType.OscillatingWall:
+                {
+                    // SpiralStepDegrees = oscillation frequency, StartAngle = swing amplitude (degrees)
+                    float swing = Mathf.Sin(Time.time * config.SpiralStepDegrees) * config.StartAngle;
+                    FireWall(origin, config, pool, gameplay, swing);
+                    break;
+                }
             }
         }
 
@@ -96,13 +125,32 @@ namespace AircraftStriker
         }
 
         private void FireWall(Vector3 origin, BulletPatternConfig config,
-            AircraftPoolManager pool, GameplayController gameplay)
+            AircraftPoolManager pool, GameplayController gameplay, float centerOffset = 0f)
         {
             float step  = config.Count > 1 ? config.SpreadAngle / (config.Count - 1) : 0f;
-            float start = config.StartAngle - config.SpreadAngle * 0.5f;
+            float start = config.StartAngle + centerOffset - config.SpreadAngle * 0.5f;
             for (int i = 0; i < config.Count; i++)
                 Spawn(pool, config.BulletConfig.BulletType, origin,
                       Rotate(Vector2.down, start + step * i), BulletOwner.Enemy, gameplay);
+        }
+
+        // Pincer: two aimed sub-fans bracketing player left+right.
+        // SpreadAngle = separation between arms; StartAngle = arc width of each arm.
+        private void FirePincer(Vector3 origin, BulletPatternConfig config, Vector3 playerPos,
+            AircraftPoolManager pool, GameplayController gameplay)
+        {
+            Vector2 toPlayer = ((Vector2)(playerPos - origin)).normalized;
+            float center  = Vector2.SignedAngle(Vector2.up, toPlayer);
+            float half    = config.SpreadAngle * 0.5f;
+            float subArc  = config.StartAngle > 0f ? config.StartAngle : 30f;
+            float step    = config.Count > 1 ? subArc / (config.Count - 1) : 0f;
+            for (int i = 0; i < config.Count; i++)
+            {
+                Spawn(pool, config.BulletConfig.BulletType, origin,
+                      Rotate(Vector2.up, center - half - subArc * 0.5f + step * i), BulletOwner.Enemy, gameplay);
+                Spawn(pool, config.BulletConfig.BulletType, origin,
+                      Rotate(Vector2.up, center + half - subArc * 0.5f + step * i), BulletOwner.Enemy, gameplay);
+            }
         }
 
         private static void Spawn(AircraftPoolManager pool, BulletType type, Vector3 origin,

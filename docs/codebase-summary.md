@@ -88,16 +88,17 @@ Features/MemoryGame/
 Features/AircraftStriker/
 ├── Scripts/
 │   ├── Bootstrap/          AircraftLifetimeScope, AircraftGameBootstrap
-│   ├── States/             AircraftGameplayState (IGameState)
+│   ├── States/             AircraftGameplayState, AircraftMainMenuState (IGameState)
 │   ├── Logic/              Enums, SOs (BulletConfig, BulletPatternConfig, EnemyConfig,
 │   │                        WaveConfig, WaveDatabase, ShopCatalog), PlayerData,
-│   │                        CheckpointState, GameScore, BulletOwner
+│   │                        CheckpointState, GameScore, BulletOwner, HitEffectType
 │   ├── Pooling/            PooledObject (base), AircraftPoolManager
 │   ├── Input/              AircraftInputHandler (IDragHandler)
 │   ├── Gameplay/           BulletController, BulletPatternExecutor, GrazeDetector,
 │   │                        EnemyController, BossController, PickupController,
 │   │                        PlayerController, BackgroundScrollController,
-│   │                        WaveManager, GameplayController, CheckpointManager
+│   │                        WaveManager, GameplayController, CheckpointManager,
+│   │                        HitEffect
 │   ├── Progression/        IProgressionService, PlayerPrefsProgressionService, ShopService
 │   ├── Audio/              IAircraftSoundService, SFXType, AircraftSoundManager
 │   ├── ViewModels/         AircraftMainMenuViewModel, AircraftHUDViewModel,
@@ -105,9 +106,10 @@ Features/AircraftStriker/
 │   │                        AircraftVictoryViewModel, AircraftPauseViewModel,
 │   │                        ShopViewModel, SkinSelectionViewModel,
 │   │                        GameOverArgs, VictoryArgs
-│   └── Views/              AircraftMainMenuView, AircraftHUDView, AircraftGameOverView,
-│                            AircraftVictoryView, AircraftPauseView, ShopView,
-│                            SkinSelectionView, ShopItemRow, SkinItemRow
+│   ├── Views/              AircraftMainMenuView, AircraftHUDView, AircraftGameOverView,
+│   │                        AircraftVictoryView, AircraftPauseView, ShopView,
+│   │                        SkinSelectionView, ShopItemRow, SkinItemRow
+│   └── Editor/             AircraftStrikerSetupWizard, HitEffectBuilder
 ├── Prefabs/                Player/, Enemies/, Projectiles/, Pickups/, VFX/
 ├── Resources/              UIFramework view prefabs (loaded by class name)
 ├── ScriptableObjects/      Waves/, Shop/
@@ -120,6 +122,7 @@ Features/AircraftStriker/
 - **WaveManager** — MonoBehaviour (needs coroutines). Receives `GameplayController` via `StartWaves(this)` method, not constructor, to break circular DI dependency.
 - **BulletPatternExecutor** — Pure C# stateless. Supports Ring/SpiralCW/SpiralCCW/AimedFan/BurstFan/Wall/DualSpiral patterns; spiral uses `Time.time * SpiralStepDegrees`.
 - **PooledObject.OnReturn** — wired in `AircraftPoolManager.CreatePool<T>` via `createFunc`: `obj.OnReturn += p => { if (p.gameObject.activeSelf) pool?.Release((T)p); }`.
+- **HitEffect system** — `HitEffect` extends `PooledObject` and plays burst particle VFX at impact position. Auto-returns to pool after particle lifetime expires. Spawned by `AircraftPoolManager.SpawnHitEffect(Vector3, HitEffectType)` with color-coded feedback per hit type (orange=enemy, gold=boss, cyan=player). Lifetimes: 0.6s (enemy), 0.8s (boss), 0.7s (player).
 - **View animations** — All views use `OnPrepareForShow()` + `OnShowAsync()` DOTween pattern (same as MemoryGame). GameOver/Victory: panel scale-in + staggered stat labels + DOVirtual.Float score count-up.
 
 ### Scene Setup (Manual — not yet done)
@@ -133,6 +136,18 @@ Features/AircraftStriker/
 ---
 
 ## Recent Changes
+
+### 2026-06-21 — Aircraft Striker: bullet hit effect VFX system
+**Feature:** Burst particle VFX on bullet impact with color-coded feedback (orange=enemy, gold=boss, cyan=player).
+**New files:**
+- `HitEffectType.cs` — enum: Enemy, Boss, Player
+- `HitEffect.cs` — `PooledObject` subclass; plays burst particles, auto-returns to pool after particle lifetime expires via `UniTask.Delay`
+- `HitEffectBuilder.cs` (editor) — menu item `AircraftStriker > Setup Wizard > Build Hit Effect Prefab` generates `HitEffect.prefab` with wired serialized fields
+**Modified files:**
+- `AircraftPoolManager.cs` — added `_hitEffectPrefab` field, `_hitEffectPool: ObjectPool<HitEffect>`, `SpawnHitEffect(Vector3, HitEffectType)` with embedded color constants
+- `BulletController.cs` — `OnTriggerEnter2D` now captures `Vector2 hitPos = transform.position` and passes it to gameplay callbacks
+- `GameplayController.cs` — `OnPlayerHit()`, `OnEnemyHit()`, `OnBossHit()` now accept `Vector2 hitPos` parameter and call `_pool.SpawnHitEffect(hitPos, type)`
+**Manual step:** Run "Build Hit Effect Prefab" menu, then assign the generated prefab to `AircraftPoolManager._hitEffectPrefab` in Inspector.
 
 ### 2026-06-20 — UIFramework Phase 2 Bug Fixes (remaining CRITICALs + W13)
 **`GameLifecycleManager.cs`** — Added `IUINavigator` injection. `RestartCurrentStateAsync` now calls `_navigator.CloseAllAsync()` between `OnExitAsync` and `OnEnterAsync`, clearing any views left on the nav stack by `OnExitAsync`. If `OnExitAsync` already cleared the stack, `CloseAllAsync` is a no-op.

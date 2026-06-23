@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d9cbdd4895175a74fa30f30210e48e21, type: 3}
-  m_Name: SpiralCW4
+  m_Name: Pincer4
   m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.BulletPatternConfig
-  PatternType: 1
-  BulletConfig: {fileID: 11400000, guid: 4817d3323e8b36341bb11003a4f225f2, type: 2}
-  Count: 16
-  StartAngle: 0
-  SpreadAngle: 360
-  BurstCount: 12
-  BurstDelay: 0.1
-  PatternInterval: 1.2
-  AimAtPlayer: 0
-  SpiralStepDegrees: 45
+  PatternType: 9
+  BulletConfig: {fileID: 11400000, guid: b06920b2573b13a468ce73ebb2328ff2, type: 2}
+  Count: 4
+  StartAngle: 25
+  SpreadAngle: 80
+  BurstCount: 5
+  BurstDelay: 0.15
+  PatternInterval: 2.0
+  AimAtPlayer: 1
+  SpiralStepDegrees: 15

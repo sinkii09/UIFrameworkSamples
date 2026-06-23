@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.BulletPatternConfig
   PatternType: 6
   BulletConfig: {fileID: 11400000, guid: 973b022758a84354a8626f5c4002377f, type: 2}
-  Count: 32
+  Count: 40
   StartAngle: 0
   SpreadAngle: 360
-  BurstCount: 5
-  BurstDelay: 0.3
-  PatternInterval: 3
+  BurstCount: 8
+  BurstDelay: 0.15
+  PatternInterval: 1.5
   AimAtPlayer: 0
-  SpiralStepDegrees: 15
+  SpiralStepDegrees: 25
