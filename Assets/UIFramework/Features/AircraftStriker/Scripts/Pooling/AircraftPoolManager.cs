@@ -57,6 +57,7 @@ namespace AircraftStriker
             try
             {
                 InitPools();
+                PreWarmPools();
             }
             catch (System.Exception e)
             {
@@ -273,6 +274,37 @@ namespace AircraftStriker
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 ps.gameObject.SetActive(false);
             }
+        }
+
+        // === Pool Pre-Warming ===
+
+        // Moves all Instantiate() calls from first-use (mid-gameplay spike) to Awake() (loading time).
+        // Unity's ObjectPool.defaultCapacity only pre-sizes the internal list — it does NOT pre-create objects.
+        private void PreWarmPools()
+        {
+            var bulletTypes = _bulletTypeValues;
+            for (int i = 0; i < bulletTypes.Length; i++)
+            {
+                if (!_bulletPools.TryGetValue(bulletTypes[i], out var pool)) continue;
+                int cap = (_bulletCapacities != null && i < _bulletCapacities.Length) ? _bulletCapacities[i] : 50;
+                WarmPool(pool, Mathf.Max(1, cap));
+            }
+            WarmPool(_basicEnemyPool,  _enemyCapacity);
+            WarmPool(_speedEnemyPool,  _enemyCapacity);
+            WarmPool(_heavyEnemyPool,  _enemyCapacity);
+            WarmPool(_bossPool,        2);
+            WarmPool(_healthPool,      _pickupCapacity);
+            WarmPool(_shieldPool,      _pickupCapacity);
+            WarmPool(_scoreBoostPool,  _pickupCapacity);
+            WarmPool(_hitEffectPool,   _hitEffectCapacity);
+        }
+
+        private static void WarmPool<T>(ObjectPool<T> pool, int count) where T : class
+        {
+            if (pool == null || count <= 0) return;
+            var buffer = new T[count];
+            for (int i = 0; i < count; i++) buffer[i] = pool.Get();
+            for (int i = 0; i < count; i++) pool.Release(buffer[i]);
         }
 
         // === Factories ===

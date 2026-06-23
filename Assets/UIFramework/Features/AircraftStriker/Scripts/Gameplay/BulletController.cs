@@ -10,9 +10,10 @@ namespace AircraftStriker
         public BulletType   BulletType { get; private set; }
         public BulletOwner  Owner      { get; private set; }
 
-        private float             _currentSpeed;
-        private float             _elapsed;
+        private float              _currentSpeed;
+        private float              _elapsed;
         private GameplayController _gameplay;
+        private Camera             _cam;
 
         public void Setup(BulletOwner owner, Vector2 direction, GameplayController gameplay)
         {
@@ -22,6 +23,7 @@ namespace AircraftStriker
             _currentSpeed  = _config.BaseSpeed;
             _elapsed       = 0f;
             transform.up   = direction;
+            _cam           = Camera.main;
         }
 
         public override void OnGetFromPool()
@@ -39,9 +41,8 @@ namespace AircraftStriker
             _elapsed += Time.deltaTime;
             if (_elapsed >= _config.Lifetime) { ReturnToPool(); return; }
 
-            Camera cam  = Camera.main;
-            float  halfH = cam.orthographicSize + 2f;
-            float  halfW = cam.aspect * cam.orthographicSize + 2f;
+            float  halfH = _cam.orthographicSize + 2f;
+            float  halfW = _cam.aspect * _cam.orthographicSize + 2f;
             Vector3 p   = transform.position;
             if (p.y < -halfH || p.y > halfH || p.x < -halfW || p.x > halfW)
             {
