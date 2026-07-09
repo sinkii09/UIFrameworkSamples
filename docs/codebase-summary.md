@@ -137,6 +137,16 @@ Features/AircraftStriker/
 
 ## Recent Changes
 
+### 2026-07-05 — UIFramework: wired Addressables load/release lifecycle in UIViewFactory
+**Goal:** `IUILoader.UnloadAsync` (releases an Addressables asset handle) existed but was never called anywhere — every successful `LoadAsync` was a permanent leak of that key's ref-count, both at `UIViewFactory.Dispose()` and whenever a freshly-loaded prefab was discarded after failing a type-check or DI/init step.
+**Fix (`UIViewFactory.cs`):**
+- Added `_cacheKeys: Dictionary<Type, string>` alongside `_cache`, storing the load key for each cached view type (written only on a fresh load, read via `TryGetValue`).
+- Added `await _loader.UnloadAsync(key, CancellationToken.None)` at every point a freshly-loaded prefab's GameObject is destroyed without entering `_cache`: both `CreateAsync` overloads' type-mismatch throws, both overloads' failure catch blocks, and `InstantiateViewAsync`'s type-mismatch throw. `CancellationToken.None` deliberately used (not the ambient `ct`) — this is must-complete cleanup, not cancellable work.
+- `Dispose()` now releases each cached view's loader handle (`GetAwaiter().GetResult()` — safe today since both loader impls are fully synchronous internally; flagged in a comment as a future deadlock risk if a loader ever does real async I/O) after destroying its GameObject.
+- Extracted key derivation (`[UIViewKey]` attribute or type name fallback) into a shared `GetKey(Type)` helper — was previously duplicated/only available inside `InstantiateViewAsync`.
+- Added an explicit contract doc comment on `IUILoader.LoadAsync` (`IUILoader.cs`): implementations must self-release any partially-acquired handle on throw/cancel — `UIViewFactory` relies on this and does not compensate for a `LoadAsync` failure itself (verified true for `AddressablesUILoader`, vacuously true for `ResourcesUILoader`).
+**Not done (by design, per reviewer sign-off):** no defensive try/catch around the cleanup `UnloadAsync` calls themselves — neither current loader can throw from `UnloadAsync`, so this would be speculative; revisit if a future `IUILoader` implementation performs failable I/O in `UnloadAsync`.
+
 ### 2026-07-05 — Aircraft Striker: activated Addressables loading for UI views
 **Goal:** Finish an already-scaffolded Resources→Addressables migration for the AircraftStriker UI (the `IUILoader`/`ResourcesUILoader`/`AddressablesUILoader` abstraction in the UIFramework package existed but was never switched on). CDN (Unity CCD) wiring is deferred to a later task.
 **Root cause of why it wasn't working:** three independent gaps, any one of which would have kept it on the Resources path — (1) the 7 `[UIViewKey]` strings on AircraftStriker views are folder-prefixed (`AircraftStriker/AircraftGameOverView`) but the Addressables group's `m_Address` entries were bare class names (`AircraftGameOverView`) — `Addressables.LoadAssetAsync` would have thrown "Failed to load" for every view; (2) `AddressablesUILoader` and its DI registration branch are gated by `#if ADDRESSABLES`, and that symbol was never defined for any platform, so the Addressables branch was compiled out entirely; (3) `UIFrameworkConfig.LoaderMode` was still `Resources`.
