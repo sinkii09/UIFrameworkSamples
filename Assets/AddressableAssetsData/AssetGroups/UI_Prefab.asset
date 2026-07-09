@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: UI_Prefab
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: UI_Prefab
+  m_GUID: ec6486f64033d084f9b23098bde646ad
+  m_SerializeEntries:
+  - m_GUID: 123e840e0b7d58441ab80b232211374d
+    m_Address: ShopItemRow
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Shop
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 49da37f7673b6724ca277e0b9933855d
+    m_Address: AircraftStriker/AircraftVictoryView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - HUD
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 62b4ebd239e67ae41a93dbf19121301a
+    m_Address: AircraftStriker/AircraftMainMenuView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - MainMenu
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68ab11e8368f6b940b5ee85bf93d32f7
+    m_Address: AircraftStriker/AircraftHUDView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - HUD
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8b7d755c114799644a7b30ac0100dd22
+    m_Address: AircraftStriker/AircraftGameOverView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - HUD
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9a5083f44bc29364299057e8a0497bbc
+    m_Address: AircraftStriker/AircraftPauseView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - HUD
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9df9e6d6bef6f7946a154c7c97d76cef
+    m_Address: SkinItemRow
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Skin
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aead8984823daad4bbb5a3d0b9f62a8f
+    m_Address: AircraftStriker/ShopView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Shop
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ee61208e947128142ab83e0caa7a0f33
+    m_Address: AircraftStriker/SkinSelectionView
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Skin
+    - UI
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 53abfa248b08d3e43a1c2d6c55a3b5d8, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 25aca2f844f57234fa968be0b095e999, type: 2}
+    - {fileID: 11400000, guid: be7198ab3d14dea4fba5834fd5b9e78c, type: 2}

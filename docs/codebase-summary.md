@@ -111,7 +111,7 @@ Features/AircraftStriker/
 │   │                        SkinSelectionView, ShopItemRow, SkinItemRow
 │   └── Editor/             AircraftStrikerSetupWizard, HitEffectBuilder
 ├── Prefabs/                Player/, Enemies/, Projectiles/, Pickups/, VFX/
-├── Resources/              UIFramework view prefabs (loaded by class name)
+├── AssetBundles/           Addressable view prefabs (see UI_Prefab Addressables group)
 ├── ScriptableObjects/      Waves/, Shop/
 └── Scenes/                 AircraftGame.unity  ← must be created manually
 ```
@@ -136,6 +136,16 @@ Features/AircraftStriker/
 ---
 
 ## Recent Changes
+
+### 2026-07-05 — Aircraft Striker: activated Addressables loading for UI views
+**Goal:** Finish an already-scaffolded Resources→Addressables migration for the AircraftStriker UI (the `IUILoader`/`ResourcesUILoader`/`AddressablesUILoader` abstraction in the UIFramework package existed but was never switched on). CDN (Unity CCD) wiring is deferred to a later task.
+**Root cause of why it wasn't working:** three independent gaps, any one of which would have kept it on the Resources path — (1) the 7 `[UIViewKey]` strings on AircraftStriker views are folder-prefixed (`AircraftStriker/AircraftGameOverView`) but the Addressables group's `m_Address` entries were bare class names (`AircraftGameOverView`) — `Addressables.LoadAssetAsync` would have thrown "Failed to load" for every view; (2) `AddressablesUILoader` and its DI registration branch are gated by `#if ADDRESSABLES`, and that symbol was never defined for any platform, so the Addressables branch was compiled out entirely; (3) `UIFrameworkConfig.LoaderMode` was still `Resources`.
+**Fix:**
+- `Assets/AddressableAssetsData/AssetGroups/UI_Prefab.asset` — renamed the 7 top-level view addresses to match their `[UIViewKey]` strings exactly (`ShopItemRow`/`SkinItemRow` addresses left as-is — they're plain `[SerializeField]` refs in `ShopView`/`SkinSelectionView`, never loaded via `IUILoader`).
+- `ProjectSettings/ProjectSettings.asset` — added `ADDRESSABLES` scripting define to `Standalone` and `WebGL` (the two confirmed target platforms).
+- `Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/UIFrameworkConfig.asset` — `LoaderMode: Resources` → `Addressables`. `MemoryGame`'s separate `UIFrameworkConfig.asset` was left untouched (its 4 views are still plain `Assets/Resources/*.prefab`, out of scope).
+- `AircraftStrikerSetupWizard.cs` — `ViewsRoot` const updated from `Assets/Resources/AircraftStriker` to the new `AssetBundles/AircraftStriker` location, since the wizard is "safe to re-run" and would otherwise regenerate prefabs back under `Resources/`, undoing the migration. Added a caution comment: re-running the wizard post-migration can still change prefab GUIDs (delete+recreate at the same path), which would desync the Addressables group's `m_GUID` bindings — verify the Addressables Groups window after any re-run.
+**Manual step required (cannot be done from CLI):** open Unity Editor, confirm no console errors, then do a full Addressables rebuild (Groups window → Build, or Build & Release once CCD is wired) before playing — address-string changes aren't picked up by a stale/incremental build.
 
 ### 2026-06-21 — Aircraft Striker: bullet hit effect VFX system
 **Feature:** Burst particle VFX on bullet impact with color-coded feedback (orange=enemy, gold=boss, cyan=player).

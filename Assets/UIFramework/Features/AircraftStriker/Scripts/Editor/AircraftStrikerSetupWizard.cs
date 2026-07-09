@@ -12,6 +12,10 @@ namespace AircraftStriker.Editor
     // Run via menu: AircraftStriker > Setup Wizard > Run Full Setup
     // Creates all ScriptableObjects, gameplay prefabs, and view prefabs.
     // Safe to re-run: existing assets are overwritten.
+    // CAUTION: view/row prefabs are Addressable (see AddressableAssetsData/AssetGroups/UI_Prefab.asset).
+    // SavePrefab deletes-then-recreates at ViewsRoot, which can change the asset GUID — re-running
+    // after the Addressables migration can silently break the group's m_GUID bindings. Verify the
+    // Addressables Groups window after any re-run.
     public static class AircraftStrikerSetupWizard
     {
         const string SOBullets   = "Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/Bullets";
@@ -25,7 +29,7 @@ namespace AircraftStriker.Editor
         const string PrefPickups = "Assets/UIFramework/Features/AircraftStriker/Prefabs/Pickups";
         const string PrefVFX     = "Assets/UIFramework/Features/AircraftStriker/Prefabs/VFX";
         const string PrefSystems = "Assets/UIFramework/Features/AircraftStriker/Prefabs/Systems";
-        const string ViewsRoot   = "Assets/Resources/AircraftStriker";
+        const string ViewsRoot   = "Assets/UIFramework/Features/AircraftStriker/AssetBundles/AircraftStriker";
 
         // ── ENTRY POINT ────────────────────────────────────────────────────────────
 
@@ -59,7 +63,7 @@ namespace AircraftStriker.Editor
             Debug.Log("[AircraftSetup] Done. Assets in:\n" +
                       "  SOs   → Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/\n" +
                       "  Prefs → Assets/UIFramework/Features/AircraftStriker/Prefabs/\n" +
-                      "  Views → Assets/Resources/AircraftStriker/\n" +
+                      "  Views → Assets/UIFramework/Features/AircraftStriker/AssetBundles/AircraftStriker/\n" +
                       "Next steps:\n" +
                       "  1. AircraftStriker > Setup Wizard > Rebuild Bullet VFX  (adds particle layers)\n" +
                       "  2. Open AircraftGame scene, assign Inspector refs on AircraftLifetimeScope\n" +

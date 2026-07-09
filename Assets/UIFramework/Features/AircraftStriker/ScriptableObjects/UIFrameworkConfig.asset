@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f88c5fdaf14ef58409767d15182da64a, type: 3}
   m_Name: UIFrameworkConfig
   m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.UIFrameworkConfig
-  LoaderMode: 0
+  LoaderMode: 1
   MaxNavigationDepth: 10
