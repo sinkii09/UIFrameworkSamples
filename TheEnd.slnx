@@ -14,6 +14,7 @@
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="Unity.Burst.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
@@ -28,6 +29,7 @@
   <Project Path="Unity.2D.Aseprite.Editor.csproj" />
   <Project Path="Sinkii09.UIFramework.Editor.Installer.csproj" />
   <Project Path="Unity.ResourceManager.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.Runtime.csproj" />
   <Project Path="Unity.2D.SpriteShape.Runtime.csproj" />
   <Project Path="Unity.InferenceEngine.Tokenization.csproj" />
   <Project Path="Unity.VisualScripting.Core.csproj" />
@@ -68,6 +70,7 @@
   <Project Path="Unity.Services.Ccd.Management.csproj" />
   <Project Path="Unity.2D.Animation.Editor.csproj" />
   <Project Path="R3.Unity.csproj" />
+  <Project Path="Extensions.Unity.PlayerPrefsEx.csproj" />
   <Project Path="Unity.2D.Common.Path.Editor.csproj" />
   <Project Path="NuGetForUnity.csproj" />
   <Project Path="Unity.Services.Core.Editor.csproj" />
@@ -112,7 +115,9 @@
   <Project Path="Unity.Services.Core.csproj" />
   <Project Path="DOTweenPro.EditorScripts.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.TestFiles.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.DependencyResolver.csproj" />
   <Project Path="R3.Unity.Editor.csproj" />
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
