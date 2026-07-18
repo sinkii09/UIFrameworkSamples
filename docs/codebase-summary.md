@@ -28,6 +28,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
 | `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
+| `Runtime/Core/Lifecycle/TransitionOverlayView.cs` | Resident full-screen overlay on the `Overlay` layer; shown/hidden by `GameLifecycleManager` around every state transition to hide the blank-screen gap. Optional per-game — see `ITransitionOverlay`/`NullTransitionOverlay`. |
 
 ### Installer Wizard
 `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
@@ -136,6 +137,22 @@ Features/AircraftStriker/
 ---
 
 ## Recent Changes
+
+### 2026-07-18 — UIFramework: framework-level transition overlay system
+**Goal:** Games had no full-screen loading/transition overlay to hide the blank-screen gap between `UINavigator.CloseAllAsync()` and a new view's factory-load+`ShowAsync` finishing. `UITransition` only animates a single view's own `CanvasGroup` — it cannot cover the whole screen. The framework's `Overlay` canvas layer (`UIRootLayerRefs.cs`, sortOrder 300) and two `LoadingState.cs` TODOs had been scaffolded for exactly this and never finished.
+**New files** (`Packages/com.sinkii09.uiframework/Runtime/Core/`):
+- `Interfaces/ITransitionOverlay.cs` — `ShowAsync`/`HideAsync`/`IsShown` contract.
+- `Lifecycle/TransitionOverlayView.cs` — resident overlay extending `UIViewBase` (not `UIView<T>`, so `UIViewRegistry.AutoRegister` never picks it up — stays off the nav stack, never factory-loaded). Lives on the `Overlay` layer. Min-display-duration guard (`_minDisplaySeconds`, default 0.3s, unscaled time) prevents flicker on fast transitions. `InitializeNonGenericAsync` throws `NotSupportedException` as a second guard against accidental factory use.
+- `Lifecycle/NullTransitionOverlay.cs` — no-op default when no overlay exists in a game's scene; keeps `GameLifecycleManager` null-check-free.
+**Modified files:**
+- `MVVM/UIViewBase.cs` — `HideAsync` gained a catch-all mirroring `ShowAsync`'s existing one (previously only caught `OperationCanceledException`; any other exception left `IsVisible` stuck `true` and the GameObject active — a pre-existing bug surfaced by code review, fixed because the overlay's "never stuck visible" guarantee depends on it).
+- `DI/UIFrameworkLifetimeScope.cs` — scene-wide `FindAnyObjectByType<TransitionOverlayView>(FindObjectsInactive.Include)` check registers the real overlay `.As<ITransitionOverlay>()` if present anywhere in the scene, else `NullTransitionOverlay` (scene-wide search deliberately matches `RegisterComponentInHierarchy`'s own resolution scope, not just this LifetimeScope's subtree).
+- `Lifecycle/GameLifecycleManager.cs` — gained `ITransitionOverlay` constructor dependency; `ChangeStateAsync<T>` and `RestartCurrentStateAsync` both wrap Show/transition/Hide in one try/finally (Show inside the try, Hide + `_isTransitioning = false` in finally) so the overlay can never get stuck showing even if Show itself throws. `ShowOverlaySafeAsync`/`HideOverlaySafeAsync` catch-and-log any exception — the overlay is decorative and must never fail a transition.
+- `Lifecycle/States/LoadingState.cs` — removed the two TODOs; overlay is GLM's responsibility now, not this state's.
+- `Assets/UIFramework/Features/AircraftStriker/Scripts/States/AircraftGameplayState.cs` — gained `ITransitionOverlay` constructor param; explicitly awaits `_overlay.HideAsync(ct)` (wrapped in try/catch, same decorative-never-fails principle) immediately before `_gameplay.StartGame()`. User-requested reliability guarantee: gameplay must never start while the overlay is still up — this was NOT previously guaranteed structurally, only incidentally by `WaveConfig.PreWaveDelay` timing.
+**Aircraft Striker scene wiring:** added a `TransitionOverlay` GameObject (full-screen `CanvasGroup` + `TransitionOverlayView` + child raycast-blocking `Image` background) under the `Overlay` layer in `AS_Bootstrap.unity`, with a `FadeTransition` asset (`AssetBundles/AircraftStriker/OverlayFade.asset`, 0.2s) assigned to `_showTransition`/`_hideTransition`. Zero new gameplay C# beyond the one-line `AircraftGameplayState` change.
+**Verified live in Editor:** compiled clean; Play-mode boot showed no errors; triggered a real `ChangeStateAsync<AircraftGameplayState>()` through the actual `GameLifecycleManager` — overlay showed/hid correctly, `UIStateMachine.CurrentState` only promotes after `OnEnterAsync` returns without throwing (confirmed `StartGame()` ran only after the overlay-hide completed).
+**Plan + reviews:** `plans/260716-2151-transition-overlay-system/` — 2 plan-review rounds + 1 post-implementation review round, all findings resolved.
 
 ### 2026-07-05 — UIFramework: wired Addressables load/release lifecycle in UIViewFactory
 **Goal:** `IUILoader.UnloadAsync` (releases an Addressables asset handle) existed but was never called anywhere — every successful `LoadAsync` was a permanent leak of that key's ref-count, both at `UIViewFactory.Dispose()` and whenever a freshly-loaded prefab was discarded after failing a type-check or DI/init step.
