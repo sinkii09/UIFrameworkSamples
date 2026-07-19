@@ -44,12 +44,13 @@
       "url": "https://package.openupm.com"
     },
     "com.sinkii09.uiframework": {
-      "version": "file:com.sinkii09.uiframework",
+      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.0.0",
       "depth": 0,
-      "source": "embedded",
+      "source": "git",
       "dependencies": {
         "com.unity.addressables": "2.6.0"
-      }
+      },
+      "hash": "92c244ca0e041ce72b48e5368291f4335baf10da"
     },
     "com.unity.2d.animation": {
       "version": "14.0.3",

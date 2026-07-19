@@ -4,6 +4,12 @@
 Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Memory Flip Card Game that demonstrates full framework integration. The game is complete and playable with sound, animations, and win detection.
 
 ## Package Dependencies (`Packages/manifest.json`)
+- **com.sinkii09.uiframework** — git dependency pinned to `#v1.0.0`, resolves to
+  `https://github.com/sinkii09/com.sinkii09.uiframework`. **As of 2026-07-19 this is no longer an
+  embedded package** — it was extracted to its own repo so other projects can depend on it too.
+  Source edits happen in a checkout of that repo, not under `Packages/` here (read-only,
+  resolved into `Library/PackageCache/`). Canonical docs: Obsidian vault at
+  `C:\Users\user\OneDrive\Documents\Obsidian Vault\UIFramework\`.
 - **UniTask 2.5.11** (`com.cysharp.unitask`) — async/await support
 - **R3 1.3.1** (`com.cysharp.r3`) — reactive extensions
 - **VContainer 1.18.0** (`jp.hadashikick.vcontainer`) — dependency injection
@@ -18,7 +24,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 
 ---
 
-## UIFramework Package (`Packages/com.sinkii09.uiframework/`)
+## UIFramework Package (`https://github.com/sinkii09/com.sinkii09.uiframework`, git dependency)
 
 ### Core Systems
 | File | Purpose |
