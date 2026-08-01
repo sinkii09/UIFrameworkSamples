@@ -644,10 +644,32 @@ namespace AircraftStriker.Editor
             {
                 var root = UIRoot("AircraftMainMenuView");
                 root.AddComponent<AircraftMainMenuView>();
-                var title   = UIChild(root, "Title");
-                var best    = MakeTMP(root, "BestScoreLabel", "Best: 0",  new Vector2(0.1f, 0.75f), new Vector2(0.9f, 0.85f));
-                var playBtn = MakeBtn(root, "PlayButton",      "PLAY",     new Vector2(0.2f, 0.45f), new Vector2(0.8f, 0.58f));
-                var shopBtn = MakeBtn(root, "ShopButton",      "SHOP",     new Vector2(0.2f, 0.28f), new Vector2(0.8f, 0.41f));
+
+                // Title: biggest element, top band, horizontally centered.
+                var title = MakeTMP(root, "Title", "AIRCRAFT STRIKER", new Vector2(0.05f, 0.80f), new Vector2(0.95f, 0.94f));
+                title.fontSize  = 64;
+                title.fontStyle = FontStyles.Bold;
+
+                var best    = MakeTMP(root, "BestScoreLabel", "Best: 0",  new Vector2(0.30f, 0.72f), new Vector2(0.70f, 0.79f));
+                var playBtn = MakeBtn(root, "PlayButton",      "PLAY",     new Vector2(0.22f, 0.36f), new Vector2(0.78f, 0.55f));
+                var shopBtn = MakeBtn(root, "ShopButton",      "SHOP",     new Vector2(0.32f, 0.22f), new Vector2(0.68f, 0.32f));
+
+                // Play is the primary action — bump its label size above the MakeBtn default so it reads bigger than Shop.
+                var playLabel = playBtn.GetComponentInChildren<TextMeshProUGUI>();
+                playLabel.fontSize  = 40;
+                playLabel.fontStyle = FontStyles.Bold;
+
+                // Real button art from the project's only UI sprite pack (GUI Pro - Casual Game) instead of MakeBtn's flat-color
+                // placeholder. Resolved by GUID, not a literal path string — on-disk filenames have inconsistent ".png"/".Png" casing.
+                var playImg = playBtn.GetComponent<Image>();
+                playImg.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath("b7f5dfa47e78a4079982ab3fd63e924b")); // Button01_225_Green
+                playImg.type   = Image.Type.Sliced;
+                playImg.color  = Color.white;
+
+                var shopImg = shopBtn.GetComponent<Image>();
+                shopImg.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath("f87d9d25262734d879c2da72faf95bf2")); // Button01_145_BlueGray
+                shopImg.type   = Image.Type.Sliced;
+                shopImg.color  = Color.white;
 
                 var so = new SerializedObject(root.GetComponent<AircraftMainMenuView>());
                 so.FindProperty("_bestScoreLabel").objectReferenceValue = best;

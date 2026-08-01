@@ -4,12 +4,16 @@
 Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Memory Flip Card Game that demonstrates full framework integration. The game is complete and playable with sound, animations, and win detection.
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — git dependency pinned to `#v1.0.0`, resolves to
+- **com.sinkii09.uiframework** — git dependency pinned to `#v1.1.0`, resolves to
   `https://github.com/sinkii09/com.sinkii09.uiframework`. **As of 2026-07-19 this is no longer an
   embedded package** — it was extracted to its own repo so other projects can depend on it too.
   Source edits happen in a checkout of that repo, not under `Packages/` here (read-only,
   resolved into `Library/PackageCache/`). Canonical docs: Obsidian vault at
   `C:\Users\user\OneDrive\Documents\Obsidian Vault\UIFramework\`.
+  `manifest.json` also carries `"testables": ["com.sinkii09.uiframework"]` — required for the
+  package's own PlayMode tests to appear in the Test Runner; do not remove it.
+- **com.unity.nuget.newtonsoft-json 3.2.2** — pulled in by the framework's persistence system
+  (was already resolving transitively via Addressables before it was declared).
 - **UniTask 2.5.11** (`com.cysharp.unitask`) — async/await support
 - **R3 1.3.1** (`com.cysharp.r3`) — reactive extensions
 - **VContainer 1.18.0** (`jp.hadashikick.vcontainer`) — dependency injection
@@ -35,6 +39,14 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
 | `Runtime/Core/Lifecycle/TransitionOverlayView.cs` | Resident full-screen overlay on the `Overlay` layer; shown/hidden by `GameLifecycleManager` around every state transition to hide the blank-screen gap. Optional per-game — see `ITransitionOverlay`/`NullTransitionOverlay`. |
+| `Runtime/Core/Persistence/JsonSaveService.cs` | `ISaveService` impl — inject it, call `SaveAsync(poco)` / `LoadAsync<T>()`. Key defaults to `typeof(T).Name`. Orchestration only: per-key locking, R3 events, backup policy. |
+| `Runtime/Core/Persistence/LocalFileStorageBackend.cs` | The one storage swap seam (`IStorageBackend`). Atomic writes to `persistentDataPath/Saves/<key>.json` + rolling `.bak`. |
+
+**Persistence (added v1.1.0):** missing save → `null`; a file that is present but not a valid
+envelope → recovers from the `.bak`, else throws. `SaveAsync(null)` throws. Renaming a save POCO
+orphans its saves (the class name *is* the filename) — prefer an explicit `const string` key for
+anything shipped. No flush-on-quit hook exists; `await` saves at your own safe point. Full API and
+gotchas in the vault's `Persistence System.md` and `Known Gotchas.md`.
 
 ### Installer Wizard
 `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
@@ -143,6 +155,59 @@ Features/AircraftStriker/
 ---
 
 ## Recent Changes
+
+### 2026-07-20 — Aircraft Striker: main menu layout redesign (casual portrait hierarchy)
+**Goal:** `AircraftMainMenuView` didn't read as a casual portrait-mobile shooter menu — the `Title` GameObject had *zero* visual content (bare `RectTransform`, no `TMP_Text`, despite being show-animated), and `PlayButton`/`ShopButton` were near-identical size/position (both 60%w×13%h, same label font size 18) with no primary/secondary hierarchy.
+**Changed** (prefab-only, zero C# behavior change to `AircraftMainMenuView.cs`/`AircraftMainMenuViewModel.cs`, applied via Unity-MCP tools, no raw YAML edits):
+- `Title` — added a `TMPro.TextMeshProUGUI` (text "AIRCRAFT STRIKER", fontSize 64, Bold), anchors moved from full-stretch `(0,0)-(1,1)` to top band `(0.05,0.80)-(0.95,0.94)`.
+- `BestScoreLabel` — anchors `(0.10,0.75)-(0.90,0.85)` → `(0.30,0.72)-(0.70,0.79)`, tucked directly under the title.
+- `PlayButton` — anchors `(0.20,0.45)-(0.80,0.58)` → `(0.22,0.36)-(0.78,0.55)` (13%h→19%h, moved to vertical-mid/lower band); its `Label` fontSize 18→40, Bold — now the visually dominant action.
+- `ShopButton` — anchors `(0.20,0.28)-(0.80,0.41)` → `(0.32,0.22)-(0.68,0.32)` (60%w×13%h → 36%w×10%h); label font size left at 18 — secondary/smaller by design.
+- `AircraftStrikerSetupWizard.cs` (`CreateViewPrefabs`, the `AircraftMainMenuView` block) — updated in lockstep with the same anchors/font values, since this wizard programmatically rebuilds the same prefab from scratch and is marked "safe to re-run"; left un-synced it would have silently reverted the whole redesign on next run with no compile error (caught by plan review).
+**Verified live in Editor:** Play Mode + Game View screenshot confirmed the intended hierarchy (title biggest/top, small best-score, big Play, smaller Shop); zero compile errors after the wizard edit; `git diff` confirmed the two view/viewmodel scripts are byte-identical to before.
+**Plan + reviews:** `plans/260720-2147-aircraft-mainmenu-layout-redesign/` — plan review (1 CRITICAL: wizard drift, resolved) + post-implementation review (Approved, no new findings).
+
+### 2026-08-01 — UIFramework v1.1.0: save/load persistence hardened + first test assembly
+
+**Repin:** `manifest.json` `#v1.0.0` → `#v1.1.0`, plus a new `"testables"` entry.
+
+**What broke:** the persistence system shipped 2026-07-20 but had never been executed, and
+`LoadAsync` could **silently destroy a save**. It relied on `JsonConvert.DeserializeObject` throwing
+to detect corruption, but Newtonsoft only throws for *malformed* JSON — a present-but-wrong-shaped
+file (`{}`, `"null"`, empty, or a newer schema) deserialized to a null payload, which the service
+reported as "no save yet". The caller would start fresh and the next `SaveAsync` rotated the last
+good backup out. No log, no exception.
+
+**Root cause:** `null` is only a safe "absent" sentinel if nothing *except* absence can produce it —
+and a deserializer can. A second instance of the same bug was caught in post-implementation review:
+the version check initially ran *after* the payload-null check, so a v2 file whose `Data` was
+reshaped still fell through to backup recovery and restored the older save over the newer one.
+
+**Fix:** a present file that is not a valid envelope is corruption — try the `.bak`, else throw.
+Only a missing file returns `null`. `SchemaVersion` is now enforced, read from a shape-agnostic
+`JToken` parse so the check cannot be masked by a payload that no longer binds; newer-than-build
+throws `SaveSchemaVersionException` and deliberately does *not* consume the backup. Also:
+`SaveAsync(null)` throws, cancellation now fires `OnSaveFailed` (a "Saving…" spinner could hang
+forever), key-less `ExistsAsync<T>()`/`DeleteAsync<T>()` overloads added, `JsonSaveService` is
+`IDisposable`, and backend file I/O is uniformly off-thread with cancellation observed.
+
+**Tests:** 30 PlayMode tests, the framework's first — verified green against the published git tag,
+not just a local checkout. The two schema regression tests were proven non-vacuous by reverting the
+check order and confirming they fail.
+
+### 2026-07-19 — Aircraft Striker: UIEffect hover sweep on main menu buttons
+**Goal:** `PlayButton`/`ShopButton` had no hover feedback. Wired `com.coffee.ui-effect`'s Shiny
+transition onto both, driven by a new `UIEffectHoverTrigger` (`Scripts/Views/UIEffectHoverTrigger.cs`)
+— `IPointerEnterHandler`/`IPointerExitHandler` that calls `UIEffectTweener.PlayForward(true)` plus a
+`DOScale` punch (1.08x, `SetLink(gameObject)`) on enter/exit.
+**Prefab wiring:** each button carries `Coffee.UIEffects.UIEffect` + `UIEffectTweener` +
+`UIEffectHoverTrigger`. Sweep config: `TransitionFilter.Shiny`, `m_TransitionTex` = package's
+`Transition-Horizontal.png` (must be assigned — shape-based filters flash instead of sweeping
+without it), width 0.25, softness 0.5, rotation 135°, gray tint, `m_TransitionRate` reset to 0 so
+it's idle at rest. Tweener: `WrapMode.Once`, duration 0.6s, not auto-looping.
+**Side effects committed alongside:** `UIEffectProjectSettings.asset` now registers the
+Shiny/Pattern shader variants (auto-added by the Editor the first time the effect renders).
+Full gotchas (context/* vs direct fields, flash-bug root cause): [[uieffect-sweep-button-setup]] memory.
 
 ### 2026-07-18 — UIFramework: framework-level transition overlay system
 **Goal:** Games had no full-screen loading/transition overlay to hide the blank-screen gap between `UINavigator.CloseAllAsync()` and a new view's factory-load+`ShowAsync` finishing. `UITransition` only animates a single view's own `CanvasGroup` — it cannot cover the whole screen. The framework's `Overlay` canvas layer (`UIRootLayerRefs.cs`, sortOrder 300) and two `LoadingState.cs` TODOs had been scaffolded for exactly this and never finished.
