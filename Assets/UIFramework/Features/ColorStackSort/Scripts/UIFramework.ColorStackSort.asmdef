@@ -1,0 +1,24 @@
+{
+    "name": "UIFramework.ColorStackSort",
+    "rootNamespace": "ColorStackSort",
+    "references": [
+        "UIFramework.ColorStackSort.Logic",
+        "Sinkii09.UIFramework",
+        "UniTask",
+        "R3.Unity",
+        "VContainer",
+        "Unity.TextMeshPro",
+        "DOTween.Modules",
+        "Coffee.UIEffect",
+        "Coffee.UIParticle"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

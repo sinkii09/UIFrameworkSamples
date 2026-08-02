@@ -1,0 +1,28 @@
+{
+    "name": "UIFramework.ColorStackSort.Editor",
+    "rootNamespace": "ColorStackSort.Editor",
+    "references": [
+        "UIFramework.ColorStackSort",
+        "UIFramework.ColorStackSort.Logic",
+        "Sinkii09.UIFramework",
+        "UniTask",
+        "R3.Unity",
+        "VContainer",
+        "Unity.TextMeshPro",
+        "DOTween.Modules",
+        "Unity.InputSystem",
+        "Coffee.UIEffect",
+        "Coffee.UIParticle"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,26 @@
+{
+    "name": "UIFramework.ColorStackSort.Tests",
+    "rootNamespace": "ColorStackSort.Tests",
+    "references": [
+        "UIFramework.ColorStackSort.Logic",
+        "UIFramework.ColorStackSort",
+        "Sinkii09.UIFramework",
+        "UniTask",
+        "R3.Unity",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

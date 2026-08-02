@@ -4,11 +4,22 @@
 Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Memory Flip Card Game that demonstrates full framework integration. The game is complete and playable with sound, animations, and win detection.
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — git dependency pinned to `#v1.1.0`, resolves to
-  `https://github.com/sinkii09/com.sinkii09.uiframework`. **As of 2026-07-19 this is no longer an
-  embedded package** — it was extracted to its own repo so other projects can depend on it too.
-  Source edits happen in a checkout of that repo, not under `Packages/` here (read-only,
-  resolved into `Library/PackageCache/`). Canonical docs: Obsidian vault at
+- **com.sinkii09.uiframework** — **pinned git tag** as of 2026-08-02:
+  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.3.0"`.
+  For most of 2026-08-01/02 this was instead a local path dependency
+  (`"file:../../com.sinkii09.uiframework"`), used deliberately so framework fixes could be
+  compile-verified from this project before being tagged. That mode consumes the other repo's
+  **working tree** — uncommitted edits there change this project immediately, and a compile error
+  there blocks this project's entire test suite (it did, twice). Swap back to `file:` only while
+  actively co-developing the framework, and re-pin as soon as the work is tagged.
+  Source edits always happen in the checkout at `e:\Hoc_2025\1_1_2025\com.sinkii09.uiframework`,
+  never in `Library/PackageCache/`, which is a read-only clone.
+  **Changing this line requires a re-resolve to take effect** — a raw manifest edit alone does not
+  reliably trigger one; re-run the package add for the same id (see memory
+  `unity-test-assembly-and-bee-gotchas`).
+  **As of 2026-07-19 this is no longer an embedded package** — it was extracted to its own repo so
+  other projects can depend on it too. Source edits happen in a checkout of that repo, not under
+  `Packages/` here. Canonical docs: Obsidian vault at
   `C:\Users\user\OneDrive\Documents\Obsidian Vault\UIFramework\`.
   `manifest.json` also carries `"testables": ["com.sinkii09.uiframework"]` — required for the
   package's own PlayMode tests to appear in the Test Runner; do not remove it.
@@ -16,7 +27,7 @@ Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Me
   (was already resolving transitively via Addressables before it was declared).
 - **UniTask 2.5.11** (`com.cysharp.unitask`) — async/await support
 - **R3 1.3.1** (`com.cysharp.r3`) — reactive extensions
-- **VContainer 1.18.0** (`jp.hadashikick.vcontainer`) — dependency injection
+- **VContainer 1.19.0** (`jp.hadashikick.vcontainer`) — dependency injection
 - **DOTween Pro** — tween engine (installed via Asset Store, not UPM)
 - **TextMeshPro** — Unity built-in
 
@@ -52,6 +63,66 @@ gotchas in the vault's `Persistence System.md` and `Known Gotchas.md`.
 `Packages/com.sinkii09.uiframework/Editor/Installer/UIFrameworkInstallerWizardSteps.cs`
 
 6-step in-Editor setup: installs OpenUPM packages → adds scripting defines → validates DOTween → creates UIRoot prefab → creates config ScriptableObject → creates folder structure.
+
+### Known Issues (2026-08-01 audit)
+Full detail: `plans/reports/code-review-260801-2110-uiframework-consolidated.md`. Package is a
+git dependency (read-only cache) — fixes land in the upstream repo (`com.sinkii09.uiframework`)
+checked out at `e:\Hoc_2025\1_1_2025\com.sinkii09.uiframework`, not in `Library/PackageCache/` here.
+
+**Fixed 2026-08-01, committed as `com.sinkii09.uiframework` v1.2.0** (commits through `03bc885`,
+tagged `v1.2.0` and pushed, plan: `plans/260801-2148-correctness-cluster/` in that repo):
+- `UIViewFactory` concurrent-creation race — both the default (auto-registration) and manual
+  paths now share one dedup guard.
+- `GameLifecycleManager` now routes through `UINavigator` instead of bypassing it — the nav
+  stack clears and `OnExitAsync` genuinely runs on every transition. `MemoryGame`'s
+  `MainMenuViewModel`/`WinViewModel` migrated off the now-removed `IUINavigator.ChangeStateAsync`
+  in the same pass, so both features finally share one navigation pattern.
+- DOTween cancel-restore — replaced with a `UITransition.RestoreOnCancel` hook called from
+  `DOTweenUIAnimator`'s catch blocks instead of a tween callback `AwaitAsync` was clobbering.
+- Two related cancellation bugs: `ShowAsync` now propagates `OperationCanceledException` instead
+  of swallowing it, and `UIStateMachine`'s cancellation-branch rollback no longer double-exits a
+  state.
+
+**Fixed 2026-08-02, committed as `com.sinkii09.uiframework` v1.2.1** (commits `f3c8855`..`3250d46`,
+tagged `v1.2.1` and pushed, TheEnd's `Packages/manifest.json` repinned to the tag and re-verified
+compiling clean (56/56 PlayMode + 4/4 EditMode), plan: `plans/260802-1122-hardening-cluster/plan.md`
+in that repo):
+- `ISafeAreaProvider` now has a Null-Object fallback (`NullSafeAreaProvider`, mirrors
+  `ITransitionOverlay`/`NullTransitionOverlay`) — a scene missing `SafeAreaProvider` degrades
+  gracefully (full-screen rect, warning logged) instead of crashing DI resolution.
+- `ViewViewModelCreatorWizard` now checks both target paths before writing either and confirms via
+  dialog before overwriting an existing View/ViewModel file.
+- `UIViewRegistry.AutoRegister`'s reflection scan recovers loadable types on a partial
+  `ReflectionTypeLoadException` instead of discarding the whole assembly's views silently.
+- Bonus fix: `Editor.Tools` asmdef was missing a `versionDefines` block for its own
+  `defineConstraints`, so the entire assembly (both setup wizards, the wizard above, the custom
+  inspector, all menu items) never compiled in any consuming project, silently, since it was
+  created — unrelated latent bug found while adding a test assembly for it.
+
+**Fixed 2026-08-02, committed as `com.sinkii09.uiframework` v1.3.0** (commits `8e37734`, `63f2d46`,
+`2c3af11`, tagged `v1.3.0` and pushed, plan:
+`plans/260802-1358-animation-transition-hardening/plan.md` in that repo) — animation/transition
+subsystem audit, 1 CRITICAL + 2 WARNING:
+- **CRITICAL:** `LoadingState`'s documented `onLoaded` callback pattern deadlocked
+  `GameLifecycleManager` — the callback called back into `GLM.ChangeStateAsync<TNext>` nested
+  inside the outer call's still-`true` `_isTransitioning`, silently no-op'ing and leaving the state
+  machine stuck on `LoadingState` forever (zero errors, overlay hides normally). No consumer had
+  used this pattern yet. `ILoadingContext.OnLoaded` removed (breaking, zero known consumers); new
+  `GameLifecycleManager.LoadSceneAndChangeStateAsync<TNext>(scene, ct)` composes "load scene" +
+  "enter TNext" as sequential sibling calls instead of nesting them.
+- A view's `CanvasGroup.interactable`/`blocksRaycasts` were restored to `true` by
+  `DOTweenUIAnimator` immediately after the entrance tween — before `OnShowAsync` finished (or,
+  with no show transition assigned, before it even started). Now owned solely by
+  `UIViewBase.ShowAsync`, restored only after `OnShowAsync` completes.
+- `CanvasGroup.alpha` could get stuck at 0 forever when mixing transition types (e.g. Fade hide +
+  Scale show on the same view) — `ScaleTransition`/`SlideTransition` never touched alpha.
+  `DOTweenUIAnimator` now unconditionally normalizes alpha after every successful show/hide.
+
+**Still open (deliberately deferred, not yet planned):** two divergent setup wizards
+(`UIFrameworkInstallerWizard` vs `UIFrameworkSetupWizard`) with no clear canonical entry point;
+machine-global `EditorPrefs` first-run flag; no path-traversal validation on the View/ViewModel
+wizard's name field. See `plans/reports/code-review-260801-2110-uiframework-consolidated.md` for
+the fuller "New WARNINGs" / "STILL-BROKEN" lists (Phase 3 candidates).
 
 ---
 
@@ -154,7 +225,440 @@ Features/AircraftStriker/
 
 ---
 
+## Color Stack Sort Game (`Assets/UIFramework/Features/ColorStackSort/`)
+
+Colour-sorting puzzle (ball-sort / hoop-stack genre). Mobile portrait, Android + iOS.
+Levels are **procedurally generated and provably solvable** — none are authored, and no level
+data is stored anywhere: a level's identity is its seed.
+
+**Status:** Phases 1–5 of 6 complete (logic core, board presentation, DI wiring + scene, level flow
++ HUD, progression persistence). **Playable in the Editor** — open `Scenes/ColorStackSort.unity`
+and press Play for a generated board with a move counter, undo, restart, and a win panel that
+advances to a harder next level; the reached level now survives a restart of the Editor.
+Phase 6 remaining: juice (UIEffect, particles, SFX).
+Plan: `plans/260801-1151-color-stack-sort/`.
+
+`Scenes/ColorStackSort.unity` is in `EditorBuildSettings` as of 2026-08-02 (appended after the two
+pre-existing `Assets/Test2/Scenes/` entries, which were preserved).
+
+### Folder Structure
+
+```
+Scripts/Logic/              UIFramework.ColorStackSort.Logic.asmdef  (noEngineReferences: true)
+  ColorId.cs                readonly struct over byte — stops colour/container index confusion
+  Move.cs                   player move (From, To); run length always derived, never stored
+  ReverseStep.cs            generator-only step (From, To, Amount) — partial runs allowed
+  StackContainer.cs         bounded stack; TopRunLength is the MAXIMAL top run
+  BoardState.cs             owns the PLAYER's move rule + IsSolved
+  LevelParams.cs            colours / capacity / empties / scramble budget + Validate()
+  GeneratedLevel.cs         board + a solution proving it solvable
+  LevelGenerator.cs         reverse-scramble generator; owns the LOOSER generator rule
+  DeterministicRandom.cs    in-repo PCG32 — see caveat below
+    BoardInteraction.cs       tap state machine; the board's ONLY write path + undo history
+    MoveRecord.cs             an applied move, with the run length undo needs
+    DifficultyCurve.cs        level -> LevelParams, and level -> seed
+    TapResult.cs / TapOutcome.cs
+Scripts/                    UIFramework.ColorStackSort.asmdef  (framework half)
+  Config/
+    ColorStackSortSettings.cs base seed + a debug fixed-recipe override; else the curve
+  Bootstrap/
+    ColorStackSortLifetimeScope.cs  root scope (subclasses UIFrameworkLifetimeScope)
+    ColorStackSortBootstrap.cs      IInitializable + IAsyncStartable; enters gameplay
+  Progression/
+    LevelProgressService.cs   current level (Singleton), persisted via ISaveService; fail-closed
+    ColorStackSortSaveData.cs the persisted POCO — one int, explicit SaveKey
+  States/
+    ColorStackSortGameplayState.cs  IGameState; builds the current level and shows BoardView
+  ViewModels/
+    BoardArgs.cs              LevelParams + Seed + Level; implements IViewArgs
+    BoardViewModel.cs         thin R3 wrapper over BoardInteraction; undo + restart commands
+    ColorStackSortWinArgs.cs / ColorStackSortWinViewModel.cs   level-complete panel
+  Views/
+    BoardView.cs              UIView<BoardViewModel>; owns the animation lock + view lifecycle
+    BoardInputRouter.cs       tap/undo -> board intent (extracted from BoardView, Phase 6)
+    BoardRenderer.cs          instantiates/destroys tubes and balls; fires the completion burst
+    BoardAnimationScope.cs    the per-show cancellation token and its renewal rule
+    BoardControlBar.cs        level, moves, undo, restart — inside BoardView, not UILayer.HUD
+    ColorStackSortWinView.cs  Popup-layer win panel; Next advances the level
+    BoardMoveAnimator.cs      cross-tube ball travel via the overlay (undo replays it backwards)
+    TubeView.cs               slots, ball column, lift + reject shake
+    TubeFeedback.cs           UIEffect completion sweep + rejected-tap red flash
+    BallView.cs               colour holder; ResetTransformTweens + landing impact
+    BallPalette.cs            ColorId -> display colour
+    JuiceBurstEmitter.cs      UIParticle burst — one shared per board, one per win panel
+    ButtonPressPunch.cs       scale punch on press; respects Selectable.interactable
+  Editor/                   UIFramework.ColorStackSort.Editor.asmdef
+    ColorStackSortPrefabBuilder.cs      create-if-missing prefab generation
+    ColorStackSortPanelPrefabBuilder.cs control bar + win panel
+    ColorStackSortJuicePrefabParts.cs   sweep / burst / punch wiring (Phase 6)
+    ColorStackSortAssetBuilder.cs       UIFrameworkConfig + Settings assets
+    ColorStackSortSceneBuilder.cs       UIRoot, 5 layers, EventSystem, camera, wiring
+    UiPrefabFactory.cs
+Configs/                    UIFrameworkConfig.asset (LoaderMode=Resources), Settings asset
+Scenes/ColorStackSort.unity playable scene
+Prefabs/                    Ball.prefab, Tube.prefab  (serialized refs, not views)
+Resources/ColorStackSort/   BoardView.prefab, ColorStackSortWinView.prefab
+                            — paths MUST match each [UIViewKey]
+Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
+  FakeSaveService.cs        in-memory ISaveService; mirrors the real key + cancellation contracts
+```
+
+### Key Architecture Notes
+
+- **Two assemblies, deliberately.** The logic half sets `noEngineReferences: true`, making "no
+  engine types in the game's brain" a compile error rather than a convention. Payoff: the core
+  compiles in a plain `dotnet` console project (parameter sweeps, mutation testing) and its tests
+  are EditMode forever — PlayMode has wedged the Unity-MCP bridge before.
+- **Two move rules that must never be merged.** `BoardState.IsLegal` is the player's (whole
+  maximal top run only). `LevelGenerator.IsLegalReverseStep` is the generator's and is
+  deliberately looser (partial runs), which is what keeps the scramble invertible. Collapsing
+  them produces unsolvable levels. Both have their own tests.
+- **Solvable by construction, not by search.** Levels are scrambled backwards from a solved board
+  with steps that each invert to one legal player move; the recorded inverses are a guaranteed
+  solution. Guaranteed-solvable is *not* un-losable — a player can still legal-move into a dead
+  board. That is answered by undo in Phase 4.
+- **`ScrambleSteps` is a budget, not a difficulty dial.** A longer random walk is not a harder
+  puzzle and solution length is not a difficulty measure. Phase 4's curve must move board *shape*
+  (colours, capacity, empties).
+- **Own PRNG on purpose.** `System.Random` is not stable across .NET versions, and Unity
+  Mono/IL2CPP differ again. Since level identity is the seed with nothing stored, a runtime change
+  would silently rewrite every level in the game. `DeterministicRandom` (PCG32) is pinned by
+  golden-value tests, verified identical under .NET 10 and Unity Mono.
+- Editor-only code has its own nested asmdef (as `MemoryGame` does). Note `AircraftStriker`
+  does *not* — its `Scripts/Editor/` sits inside a non-Editor asmdef, a latent player-build risk.
+- **Root scope, not child scope.** `ColorStackSortLifetimeScope` subclasses
+  `UIFrameworkLifetimeScope` (MemoryGame pattern) rather than parenting a child scope to it
+  (AircraftStriker pattern). The feature registers *no* scene MonoBehaviours — the whole board is
+  inside the prefab — so the child-scope `SetScopeContainer` lifecycle would be overhead with
+  nothing to gain. Root registrations are visible to per-view child scopes anyway.
+- **The view key is namespaced on purpose.** `UIViewRegistry` scans every assembly in the AppDomain
+  and *drops* a second view sharing a key. `[UIViewKey("ColorStackSort/BoardView")]` must match the
+  path under `Resources/` exactly — `ResourcesUILoader` passes the key verbatim to
+  `Resources.LoadAsync`, with no prefix. An unqualified `BoardView` would eventually collide with
+  another feature.
+- **`[Preserve]` on view, ViewModel, state and bootstrap.** All four are reached only reflectively
+  (registry scan, VContainer). Under IL2CPP — which this game targets — stripping them fails in a
+  way Editor Play can never reproduce. Fully qualify it: VContainer ships its own
+  `PreserveAttribute` and the short name is ambiguous.
+
+---
+
 ## Recent Changes
+
+### 2026-08-02 — ColorStackSort Phase 6: juice (UIEffect + UIParticle)
+
+**Dependency added:** `com.coffee.ui-particle` pinned `#4.13.0` (bare git URL, no `?path=` segment
+— unlike UIEffect). Needed because the board's canvas is `ScreenSpaceOverlay`, which composites
+last, so a plain `ParticleSystem` always draws behind the entire UI.
+
+**Added:** `BoardInputRouter` (behaviour-neutral extraction — BoardView was 204 LOC and had to
+shrink before it grew), `TubeFeedback`, `JuiceBurstEmitter`, `ButtonPressPunch`,
+`ColorStackSortJuicePrefabParts`.
+
+**Modified:** `BallView` (+`ResetTransformTweens`, +`PlayLandingImpact`), `TubeView`,
+`BoardMoveAnimator`, `BoardRenderer` (+`CelebrateIfComplete`), `BoardView` (`mayWin` →
+`isForwardMove`, now takes indices not TubeViews), `ColorStackSortWinView` (confetti), both prefab
+builders, both asmdefs.
+
+Four effects: ball landing squash, tube-completion sweep + colour-matched burst, win confetti,
+button punch + rejected-tap red flash. **SFX deliberately out of scope** (user scoped this phase to
+"UIEffect, particles").
+
+Non-obvious constraints now encoded in the code:
+
+- **`DOKill(complete:false)` does not restore.** Adding a scale punch retroactively turned every
+  bare `DOKill` on a ball into a permanent stuck-scale bug. All four sites now route through
+  `BallView.ResetTransformTweens()` (kill **and** restore). The fourth site was non-obvious:
+  `SetParent(overlay, worldPositionStays: true)` recomputes `localScale` from the world matrix, so
+  the reset has to come *after* the reparent.
+- **Celebration is gated on `isForwardMove`** — an undo can leave its destination full and
+  monochrome, and celebrating a move being taken back reads as a bug.
+- **`UIParticle.Play()` wipes live particles** (`Simulate(0,false,restart:true)`), so bursts use
+  `ParticleSystem.Emit()`; `Clear()`/`Stop()` latch `isPaused` permanently, so `OnDisable`→Clear is
+  paired with `OnEnable`→Resume; and a Stopped system is not simulated, so `ParticleSystem.Play()`
+  runs once on enable. `positionMode = Absolute` is pinned so hand-tuning `scale` cannot start
+  dragging live particles.
+
+**Verified:** 176/176 EditMode unchanged; `compilationFailed=False` by reflection over built DLLs;
+all three regenerated prefabs carry the expected components. Prefab regeneration was safe to
+automate because `Tube.prefab`'s serialized fields and `BoardView.prefab`'s palette were confirmed
+identical to their code defaults first. **Play Mode visual QA still outstanding.**
+
+### 2026-08-02 — ColorStackSort Phase 5: progression persisted via `ISaveService`
+
+**Added:** `ColorStackSortSaveData` (persisted POCO), a rewritten `LevelProgressService`
+(load/save/clamp), `FakeSaveService` + `LevelProgressServiceTests` (17 tests).
+**Modified:** `ColorStackSortBootstrap` (awaits the load *before* the first state change),
+`ColorStackSortGameplayState` (reads the level per entry), `ColorStackSortWinViewModel`,
+`UIFramework.ColorStackSort.Tests.asmdef` (+`Sinkii09.UIFramework`, `UniTask`, `R3.Unity`).
+
+The reached level now survives a restart. Only an `int` is stored — a level's identity is its seed,
+so the board is regenerated, never serialized.
+
+**Rules this phase established, each of which was a real defect first:**
+- **`LoadAsync` never throws except `OperationCanceledException`.** `ColorStackSortBootstrap`
+  catches only OCE, so any other escaping exception skips the state change and leaves a blank
+  screen — silently failing the "corrupt save → start at level 1" requirement the phase exists for.
+- **Saving is fail-closed.** `_savingDisabled` starts `true` and opens only after a load actually
+  completes. A `SaveSchemaVersionException` (save written by a *newer* build) leaves it closed for
+  the whole session, so real progress is never overwritten. Cancellation leaves it closed too.
+- **Save with `CancellationToken.None`, deliberately.** A lifetime-bound token
+  (`Application.exitCancellationToken`) would cancel the write exactly at quit, when it most needs
+  to land. `JsonSaveService.Dispose` declines to abort in-flight saves for the same reason.
+- **One shared mutable save object, and `LoadAsync` adopts the deserialized instance.**
+  `JsonSaveService` serializes *inside* its per-key semaphore and `SemaphoreSlim` release order is
+  not FIFO, so per-write snapshots could persist level 2 after level 3. Adoption (rather than
+  copying `CurrentLevel` out) is what stops a future second field being read, dropped, and
+  overwritten with its default.
+- **The level is clamped on every set.** Not just anti-tamper: `SaveEnvelopeCodec` cannot detect an
+  envelope holding a *different* type and binds it to an all-default instance — i.e. level 0, which
+  throws in `DifficultyCurve.ForLevel` inside a state's `OnEnterAsync`.
+- **`SaveKey` is pinned and must match `^[A-Za-z0-9_-]+$`.** `JsonSaveService.ValidateKey` runs
+  before any await; a bad key lands in the blanket catch, leaves saving *enabled*, and then faults
+  every write — so progress silently never persists. A test pins the key against the regex.
+- **Advancing and rebuilding are separate.** The level is banked to disk the moment `Advance()`
+  runs, so the win panel advances at most once per show but may retry the rebuild; a failed rebuild
+  re-arms Next instead of leaving a dead popup.
+
+**Verification:** 173/173 EditMode green *before* the post-implementation review. The review's fixes
+(whole-object adoption, the fake honouring `ct` and the key regex, the win-panel advance/retry
+split) plus 3 further tests are **confirmed compiled** — verified by reflecting over
+`Library/ScriptAssemblies/UIFramework.ColorStackSort.Tests.dll` for the new symbols, not by trusting
+the console, which was serving latched `CS0103` errors from a mid-edit save at the time. Those 3
+tests have **not been executed yet**; expected total is 176.
+
+### 2026-08-02 — UIFramework v1.3.0: animation/transition hardening cluster (1 CRITICAL + 2 WARNING, tagged and pushed)
+
+Targeted audit of `Runtime/Core/Animation/*` and the lifecycle/navigation code that drives it —
+separate from the v1.2.0/v1.2.1 consolidated-audit clusters above. Root cause, plan, reviewer
+approval, implementation, 6 new/modified regression tests (61/61 PlayMode green), all 3 fixes
+revert-and-confirm-red spot-checked (one revert during Finding 2's check surfaced a genuine second
+gap — a fresh `CanvasGroup` defaults `interactable=true`, Unity's own default, which the initial
+fix missed for the null-transition path — caught and fixed before commit), post-implementation
+review (Approve with changes, 1 non-blocking WARNING deferred to the vault as a known limitation),
+vault synced. 3 commits in `com.sinkii09.uiframework` (`8e37734`, `63f2d46`, `2c3af11`), tagged
+`v1.3.0`, pushed. TheEnd stayed on `file:../../com.sinkii09.uiframework` until after ColorStackSort
+Phase 5, then repinned to `...git#v1.3.0` (an earlier revision of this entry claimed the repin had
+already happened — it had not). Plan:
+`plans/260802-1358-animation-transition-hardening/plan.md` in that repo. Full detail in the
+"Known Issues" section above.
+
+### 2026-08-02 — UIFramework v1.2.1: Phase 2 hardening cluster (3 findings fixed + 1 bonus fix, tagged and pushed)
+
+Follow-up to the v1.2.0 correctness cluster — the smaller "crash / data-loss prevention" bucket
+deferred at the time (C4, C5, and a `UIViewRegistry` reflection-swallow finding), all backwards
+compatible. Plan: `plans/260802-1122-hardening-cluster/plan.md` in
+`e:\Hoc_2025\1_1_2025\com.sinkii09.uiframework` (commits `f3c8855`..`3250d46`, tagged `v1.2.1`,
+pushed to `origin/main`). TheEnd's `Packages/manifest.json` repinned from the temporary
+`file:../../com.sinkii09.uiframework` compile-verification dependency to
+`...git#v1.2.1` and re-verified compiling clean against the real tag (56/56 PlayMode +
+4/4 EditMode).
+
+**What broke / root cause / fix**, one line each:
+- Wizard silently destroyed existing files on regen → `File.WriteAllText` with no existence check
+  → now checks both target paths before writing either, confirms via dialog.
+- `ISafeAreaProvider` crashed DI when unregistered → `UIFrameworkLifetimeScope` only registered it
+  when a `SafeAreaProvider` existed in hierarchy, else registered nothing (VContainer field
+  injection throws before `SetValue` on a missing registration) → added `NullSafeAreaProvider`
+  Null-Object fallback, same pattern as the existing `ITransitionOverlay`/`NullTransitionOverlay`.
+- `UIViewRegistry` silently dropped a whole assembly's views on any reflection hiccup → bare
+  `catch { continue; }` around `Assembly.GetTypes()` → narrowed to `ReflectionTypeLoadException`,
+  recovers the types that loaded fine via `ex.Types.Where(t => t != null)` instead of discarding
+  all of them.
+- **Bonus, found mid-implementation:** `Editor.Tools` assembly (both setup wizards, the View/
+  ViewModel generator, the custom inspector, all menu items) never compiled in any consuming
+  project, ever, silently — its asmdef had `defineConstraints` for 3 `SINKII09_*` symbols but no
+  matching `versionDefines` to actually define them (per-assembly, not global — same class of bug
+  previously seen in a test asmdef, see [[unity-test-assembly-and-bee-gotchas]] memory). Fixed by
+  copying the working `versionDefines` block from the runtime/test asmdefs.
+
+**Verification:** compiled clean project-wide; 56/56 PlayMode tests + 4/4 EditMode tests green
+(new `Tests/Editor/` assembly for the wizard test — it depends on the Editor-only `Editor.Tools`
+assembly, which the unrestricted `Tests/Runtime` assembly can't reference); revert-and-confirm-red
+spot-check on the wizard and SafeAreaProvider fixes. Also hit and worked around a genuine Unity
+Editor session quirk: this project's `Sinkii09.UIFramework.Tests` (Tests/Runtime) assembly's
+EditMode test discovery got stuck mid-session (compiled fine, zero tests enumerated under
+`testMode: EditMode` by any filter) — PlayMode discovery for the same assembly worked throughout
+and was used instead once identified; likely needs an Editor restart to fully resolve, not
+project-code-related.
+
+**Status:** committed, NOT tagged/pushed — same STOP-gate as v1.2.0, awaiting user confirmation.
+Two smaller Editor-tooling risks remain deliberately deferred (two divergent setup wizards, no
+path-traversal validation on the wizard's name field) — see Known Issues above.
+
+### 2026-08-02 — ColorStackSort Phase 4: level flow + HUD (moves, undo, restart, next)
+
+Turned the single generated board into a loop. **Compiles clean; 159/159 EditMode tests green**
+(0 failed, 0 skipped), verified against UIFramework v1.3.0 after the post-review fixes.
+
+**Added (Logic assembly, engine-free):**
+- `MoveRecord` — From/To/Count/Color. Unlike `Move` it *does* carry the run length, because after a
+  move the board can no longer tell how much of the destination's top run arrived in that step.
+- `BoardState.UndoMove(MoveRecord)` — the board's **second write path**, six ordered checks, not
+  interchangeable with `Apply`/`IsLegal`. Third occurrence of the "two similar-looking rules that
+  must not be merged" trap in this feature.
+- `DifficultyCurve` — `ForLevel(int)` (3→8 colours, spare containers 2→1 at level 10) and
+  `SeedForLevel(levelIndex, baseSeed)`, so level N is always the same board and Restart reproduces
+  the puzzle the player just failed.
+- `BoardInteraction` — LIFO history, `CanUndo`, `TryUndo`. Unlimited depth.
+
+**Added (Unity assembly):** `LevelProgressService` (Singleton — the one piece of state that outlives
+a view), `BoardRenderer` and `BoardAnimationScope` (both extracted from `BoardView`),
+`BoardControlBar`, `ColorStackSortWinView` + ViewModel + Args, `ColorStackSortPanelPrefabBuilder`.
+
+**Key decisions:**
+- **Restart and Next are lifecycle operations, not ViewModel operations.** `BoardView` rebuilds its
+  tubes and clears its solved latch only in `OnShowAsync`, so regenerating the board in the
+  ViewModel would leave it rendering the old board and permanently input-locked. Both route through
+  `GameLifecycleManager.RestartCurrentStateAsync()` — the feature's only board-rebuild path.
+- `ChangeStateAsync<T>` into the state you are already in silently no-ops (v1.2.0 same-state guard),
+  so `RestartCurrentStateAsync` is the only correct API here.
+- The control bar lives **inside** `BoardView`, not on `UILayer.HUD` — HUD sorts at 0 and Screen at
+  100, so a HUD-layer view would render underneath the board it controls.
+- `ColorStackSortSettings`'s fixed knobs became a debug override (off by default) for reproducing a
+  reported board; the curve drives normal play.
+- `BoardView.prefab` was **deleted and regenerated** (the builder is create-if-missing, so the
+  control bar would never have reached the existing prefab and `_controlBar` would be null at
+  runtime). Safe because it is fully code-generated and referenced only by a Resources *path*.
+
+**Caught in review, would have shipped otherwise:**
+- **Win panel soft-lock.** Next was tappable during the panel's own 0.4s entrance, while
+  `UINavigator._isTransitioning` was still held — so `RestartCurrentStateAsync`'s `CloseAllAsync`
+  *and* its `ShowAsync` were both silently dropped. Level advanced, board never rebuilt, popup
+  stranded over a board whose controls were already disabled. Two warnings, no error, no way out.
+  Fixed by arming the button only after a successful entrance, plus an `IsTransitioning` check.
+- Undo lowered the wrong tube (`record.To` instead of the selected one), and lowered it after the
+  board had already mutated, so the lift animation could strand balls in the air.
+- `..._GeneratesASolvableBoard` asserted only `DoesNotThrow` — a test whose name promised more than
+  its body checked, the same defect as the generator work.
+
+**Known gaps:** `BoardView.cs` is 204 lines and `ColorStackSortSceneBuilder.cs` 203, both over the
+200-line guideline; further trimming would have meant deleting comments that document real traps.
+
+### 2026-08-02 — ColorStackSort Phase 3: DI wiring, game state, playable scene
+**Added:** `ColorStackSortSettings` (SO), `ColorStackSortLifetimeScope` (root scope),
+`ColorStackSortGameplayState` (`IGameState`), `ColorStackSortBootstrap`
+(`IInitializable` + `IAsyncStartable`), `ColorStackSortAssetBuilder` + `ColorStackSortSceneBuilder`
+(editor, create-if-missing), `ColorStackSortSettingsTests` (6 tests). 124/124 EditMode green.
+
+**Moved:** `BoardView.prefab` → `Resources/ColorStackSort/` (GUID preserved) and added
+`[UIViewKey("ColorStackSort/BoardView")]`. It was previously in neither `Resources/` nor
+Addressables, so `ShowAsync<BoardView>` would have thrown — latent because nothing had called it.
+
+**Bugs found and fixed during the phase, all of which compiled clean:**
+- `EditorSceneManager.NewScene(..., Single)` unloads assets the new scene doesn't reference yet.
+  Config/settings references captured *before* it became "fake null" and serialized as
+  `{fileID: 0}` — a scene that looked built and would fail on Play. Fix: load assets *after*
+  `NewScene`. (First diagnosis blamed `AssetDatabase.Refresh` and was wrong; a null-guard log
+  identified the real boundary.)
+- `CloseAllAsync` inside `OnEnterAsync` is dead code — `UINavigator` exempts `ShowAsync` from the
+  transition guard via `_stateTransitionActive` but not `CloseAllAsync`, and the stack is already
+  cleared before the state is entered. Removed.
+- `[Preserve]` is ambiguous (CS0104) wherever `using VContainer;` is present — VContainer ships its
+  own `PreserveAttribute`. Fully qualified.
+- `SaveCurrentModifiedScenesIfUserWantsTo()` opens a modal dialog that deadlocks Unity's main
+  thread under MCP automation. Replaced with a non-blocking `scene.isDirty` refusal.
+
+### 2026-08-01 — UIFramework v1.2.0: Phase 1 correctness cluster (5 findings fixed, committed not yet tagged)
+4-way parallel adversarial audit (101 files) re-verified the June 2026 review's "fixed" claims and
+found 4 of 9 only partially fixed, plus 5 new CRITICALs. This closes the "Phase 1 — correctness"
+cluster (5 findings) with a reviewed plan, faithful implementation, 20 new regression tests
+(50/50 green), and a full revert-and-confirm-red spot-check on all 5 fixes before committing.
+
+**What broke:** (1) `UIViewFactory`'s concurrent-creation dedup guard only covered the manual
+`Register<>()` path — `UINavigator`'s default auto-registration path had no guard at all, so two
+concurrent requests for the same view type could instantiate two GameObjects. (2)
+`GameLifecycleManager` bypassed `UINavigator` internally, calling the state machine directly —
+this made the navigator's nav-stack-clearing dead code for every GLM transition and, because
+`UINavigator.ChangeStateAsync` used to call `IUIStateMachine.ResetState()` before every
+transition, silently skipped every state's `OnExitAsync` (timeScale restore, subscription
+disposal, spawned-object teardown never ran). Confirmed live: `MemoryGame` and `AircraftStriker`
+were on incompatible navigation paths in this same repo. (3) `TweenExtensions.AwaitAsync`'s
+`OnComplete`/`OnKill` wiring silently overwrote every built-in transition's own `.OnKill(...)`
+restore-on-cancel callback — those callbacks *never once ran*, despite passing code review in
+June 2026 (DOTween's setters replace, not chain). (4) `UIViewBase.ShowAsync` swallowed
+`OperationCanceledException` instead of propagating it, so a cancelled show still got pushed onto
+the nav stack as a hidden phantom entry. (5) `UIStateMachine`'s cancellation-branch rollback still
+unconditionally restored the previous state as current even after its `OnExitAsync` had already
+run, double-executing exit cleanup on the next transition — the June fix only covered the
+general-exception branch.
+
+**Root cause pattern across (1)/(3):** a fix applied to one of two parallel code paths, or to one
+of two chained callback sites, is not a fix — always grep for every caller/every path before
+declaring a bug closed.
+
+**Fix:** collapsed `UIViewFactory` to one `CreateCoreAsync` behind all 3 public overloads;
+`GameLifecycleManager` now takes the concrete `UINavigator` and routes through its (now-`internal`)
+`ChangeStateAsync`, with `ResetState()` no longer auto-invoked so `OnExitAsync` genuinely runs;
+added `UITransition.RestoreOnCancel(view)` called from `DOTweenUIAnimator`'s catch blocks instead
+of any tween callback; `ShowAsync` now rethrows on cancel (`HideAsync` deliberately still doesn't —
+documented asymmetry); `UIStateMachine`'s two exception branches now share one rollback rule.
+`IUINavigator.ChangeStateAsync` removed from the public interface entirely (breaking change,
+v1.1.0→**v1.2.0**) — `MemoryGame`'s `MainMenuViewModel`/`WinViewModel` migrated to
+`GameLifecycleManager.ChangeStateAsync`/`RestartCurrentStateAsync` in the same session.
+
+**Status:** framework repo (`e:\Hoc_2025\1_1_2025\com.sinkii09.uiframework`) has 7 commits through
+`03bc885`, CHANGELOG + 5 Obsidian vault notes updated. **Not yet tagged or pushed** — TheEnd is
+temporarily on a `file:../../com.sinkii09.uiframework` dependency in `Packages/manifest.json`
+pending user confirmation to tag `v1.2.0` and repin to the git URL.
+
+### 2026-08-01 — Color Stack Sort: Phase 2 board presentation (118 EditMode tests)
+
+**Added:** the view layer — tubes of stacked balls, tap-to-select (top run lifts), tap-to-move
+(whole run travels). Prefabs are generated from code (`Tools/ColorStackSort/Build Prefabs`) using
+Unity's built-in sprites, so the feature has no binary art dependency. **Create-if-missing** —
+existing prefabs are skipped, deliberately unlike `AircraftStrikerSetupWizard`, which rebuilds from
+hardcoded values and silently reverts manual edits.
+
+Tap rules live in the engine-free Logic assembly (`BoardInteraction`), not the ViewModel: selection
+state is game logic, and it keeps the whole rule set EditMode-testable. `BoardInteraction` owns the
+board's **only** write path.
+
+**Two CRITICAL animation defects found in review, both invisible to tests:**
+
+1. `Shake()` read `anchoredPosition` *before* `DOKill(true)`, so a second rejected tap within the
+   0.3s shake duration captured a mid-shake offset — and that stale value got written back on kill,
+   leaving the tube column permanently off-centre.
+2. The 0.14s selection-lift tween survived the reparent onto the travel overlay, where its
+   tube-local target meant somewhere else entirely. Being the older tween it wrote first each frame,
+   so the travel tweens captured the corrupted position as their start and balls visibly warped.
+
+Also: `_animationCts` is recreated in `OnEnable` when already cancelled (a GameObject toggled
+outside the framework's Show/Hide path would otherwise silently kill every later move while taps
+stayed live); `PopTop`/`Attach` log instead of silently clamping a view/model desync.
+
+**Verification:** 160 generated levels driven to solved through `Tap()` calls alone (6,738 taps),
+asserting *each* move tap returns `Moved` — endpoint-only assertions would let a wrong rule
+reinterpret the following tap and still stumble into a win.
+
+### 2026-08-01 — Color Stack Sort: Phase 1 pure logic core + 105 EditMode tests
+
+**Added:** new game feature `Assets/UIFramework/Features/ColorStackSort/` — board model, player
+move rule, and a procedural level generator, all engine-free. First feature in the project split
+across a `noEngineReferences` logic assembly plus a test assembly.
+
+**Three defects caught and fixed after the code was written and fully green:**
+
+1. **Dead difficulty knob.** `ScrambleSteps` did nothing past ~12 moves on a 4-colour board —
+   11.7 average at budgets of 20, 60, 200 *and* 1000, identical. Root cause: the immediate-undo
+   filter emptied the candidate list and the `break` treated that as terminal, when near
+   saturation the only surviving candidate is often just the undo of the last step. Fix: on a
+   stall, re-collect without the filter before giving up. 11.7 → 43.6 average, zero solvability
+   loss across 200 replayed levels per setting.
+2. **Crash on valid input.** `ScrambleSteps = 1` threw for ~0.4% of seeds (233/80000): a one-step
+   scramble often lands back on a solved board and 8 full restarts weren't enough. Would have
+   crashed specific tutorial levels once Phase 4 maps level index to seed. Fix: keep stepping past
+   the budget while the board still reads solved. 0/80000.
+3. **Non-deterministic level identity.** `System.Random` gives no cross-runtime guarantee, so a
+   Unity upgrade could have silently rewritten every level. Replaced with in-repo PCG32 + golden
+   values, verified identical across .NET 10 and Unity Mono.
+
+**Method note:** the invertibility rule was wrong on its first draft (`j == A.Count` instead of
+`runLength == A.Count` — for `[Red, Red, Blue]` the top run is 1 but Count is 3). Mutation testing
+then showed the generate-then-replay test is *blind* to that specific bug, because
+`CollectCandidates`' `amount <= runLength` loop bound never offers the bad candidate — the loop
+bound was doing work credited to the constraint. Only the direct rule tests catch it; the
+reachable clause is caught 200/200.
 
 ### 2026-07-20 — Aircraft Striker: main menu layout redesign (casual portrait hierarchy)
 **Goal:** `AircraftMainMenuView` didn't read as a casual portrait-mobile shooter menu — the `Title` GameObject had *zero* visual content (bare `RectTransform`, no `TMP_Text`, despite being show-animated), and `PlayButton`/`ShopButton` were near-identical size/position (both 60%w×13%h, same label font size 18) with no primary/secondary hierarchy.
