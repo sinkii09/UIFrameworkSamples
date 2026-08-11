@@ -17,10 +17,17 @@ namespace ColorStackSort
     public sealed class TubeFeedback : MonoBehaviour
     {
         private const float FlashDuration = 0.12f;
+        private const float SweepBodyAlpha = 0.7f;
         private static readonly Color FlashTint = new Color(1f, 0.35f, 0.35f, 0.5f);
 
         [SerializeField] private Image _body;
         [SerializeField] private UIEffectTweener _sweep;
+
+        // Not a serialized field: UIEffect and TubeFeedback are always added to the same
+        // GameObject by ColorStackSortJuicePrefabParts.AddTubeFeedback, so fetching it is simpler
+        // than another builder-wired reference. Component add order doesn't matter — only the
+        // reference is captured here, nothing on it is read or written until PlayComplete runs.
+        private UIEffect _effect;
 
         /// <summary>
         /// Captured once, at Awake. Reading the current colour at flash time would sample a flash
@@ -36,11 +43,36 @@ namespace ColorStackSort
         private void Awake()
         {
             if (_body != null) _bodyBaseTint = _body.color;
+            _effect = GetComponent<UIEffect>();
         }
 
-        /// <summary>Sweeps the tube once. Fire-and-forget; nothing awaits it.</summary>
-        public void PlayComplete()
+        /// <summary>
+        /// Sweeps the tube once, colour-matched to <paramref name="tint"/>. Fire-and-forget;
+        /// nothing awaits it.
+        /// </summary>
+        /// <remarks>
+        /// Also flashes the body panel's alpha up for the sweep's duration. Without this the sweep
+        /// is rendered through the body's resting 13% alpha and is functionally invisible — the
+        /// panel needs something opaque enough to actually show a highlight on.
+        /// </remarks>
+        public void PlayComplete(Color tint)
         {
+            if (_effect != null) _effect.transitionColor = tint;
+
+            if (_body != null)
+            {
+                // Kill and restore together, same idiom as PlayRejected below: two completions
+                // inside one flash would otherwise stack tweens on this Image.
+                RestoreBody();
+
+                var boosted = _bodyBaseTint;
+                boosted.a = SweepBodyAlpha;
+                var sweepDuration = _sweep != null ? _sweep.duration : FlashDuration;
+                _body.DOColor(boosted, sweepDuration / 2f)
+                    .SetLoops(2, LoopType.Yoyo)
+                    .SetLink(gameObject);
+            }
+
             // resetTime: true — a tube completed twice in one level must sweep from the start again,
             // not resume from wherever the previous sweep was left.
             if (_sweep != null) _sweep.PlayForward(true);

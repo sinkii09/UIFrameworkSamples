@@ -69,6 +69,7 @@
   <Project Path="Unity.RenderPipelines.Universal.2D.Editor.Overrides.csproj" />
   <Project Path="Unity.VisualScripting.State.csproj" />
   <Project Path="Unity.Services.Ccd.Management.csproj" />
+  <Project Path="UIFramework.ColorStackSort.Tests.csproj" />
   <Project Path="Unity.2D.Animation.Editor.csproj" />
   <Project Path="R3.Unity.csproj" />
   <Project Path="Extensions.Unity.PlayerPrefsEx.csproj" />
@@ -127,7 +128,6 @@
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.PathTracing.Editor.csproj" />
-  <Project Path="UIFramework.ColorStackSort.Tests.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Services.Core.Device.csproj" />

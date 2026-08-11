@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &524378687848437777
+--- !u!1 &4162514882061823240
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,7 +8,7 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8359957985067927607}
+  - component: {fileID: 1645656957178371635}
   m_Layer: 0
   m_Name: Slots
   m_TagString: Untagged
@@ -16,26 +16,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &8359957985067927607
+--- !u!224 &1645656957178371635
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 524378687848437777}
+  m_GameObject: {fileID: 4162514882061823240}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 9135202143323775716}
+  m_Father: {fileID: 6605899089097181063}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 118, y: 400}
+  m_SizeDelta: {x: 118, y: 0}
   m_Pivot: {x: 0.5, y: 0}
---- !u!1 &6183656273284428825
+--- !u!1 &7611180203666275722
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,14 +43,14 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 9135202143323775716}
-  - component: {fileID: 2532300961362094351}
-  - component: {fileID: 783531673572662810}
-  - component: {fileID: 7413292897136809246}
-  - component: {fileID: 2459826111297909888}
-  - component: {fileID: 2980634284093922246}
-  - component: {fileID: 7362007704833745713}
-  - component: {fileID: 4858242471752829065}
+  - component: {fileID: 6605899089097181063}
+  - component: {fileID: 4088544091434956928}
+  - component: {fileID: 6332332613345184114}
+  - component: {fileID: 7028068352075712231}
+  - component: {fileID: 6819670856666316860}
+  - component: {fileID: 3798217843010770702}
+  - component: {fileID: 6654435433936980370}
+  - component: {fileID: 2837427135095074423}
   m_Layer: 0
   m_Name: Tube
   m_TagString: Untagged
@@ -58,19 +58,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &9135202143323775716
+--- !u!224 &6605899089097181063
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8359957985067927607}
+  - {fileID: 1645656957178371635}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -78,21 +78,21 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 118, y: 400}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &2532300961362094351
+--- !u!222 &4088544091434956928
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_CullTransparentMesh: 1
---- !u!114 &783531673572662810
+--- !u!114 &6332332613345184114
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -116,13 +116,13 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7413292897136809246
+--- !u!114 &7028068352075712231
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -156,35 +156,35 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 783531673572662810}
+  m_TargetGraphic: {fileID: 6332332613345184114}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &2459826111297909888
+--- !u!114 &6819670856666316860
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6aaa3f5c2f4f0ec439cc03e2aee5eecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIFramework.ColorStackSort::ColorStackSort.TubeView
-  _slotRoot: {fileID: 8359957985067927607}
-  _button: {fileID: 7413292897136809246}
-  _feedback: {fileID: 4858242471752829065}
-  _slotHeight: 54
+  _slotRoot: {fileID: 1645656957178371635}
+  _button: {fileID: 7028068352075712231}
+  _feedback: {fileID: 2837427135095074423}
+  _slotHeight: 88
   _bottomOffset: 14
   _liftHeight: 74
---- !u!114 &2980634284093922246
+--- !u!114 &3798217843010770702
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 938fce054c42f40a3969e27a88d9bdd8, type: 3}
@@ -329,13 +329,13 @@ MonoBehaviour:
   m_DetailTexSpeed: {x: 0, y: 0}
   m_CustomRoot: {fileID: 0}
   m_Flip: 0
---- !u!114 &7362007704833745713
+--- !u!114 &6654435433936980370
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 90ac5d06c7b714c29a6b7b3b80e443a7, type: 3}
@@ -405,17 +405,17 @@ MonoBehaviour:
   m_OnChangedRate:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &4858242471752829065
+--- !u!114 &2837427135095074423
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6183656273284428825}
+  m_GameObject: {fileID: 7611180203666275722}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 616e3ee5c57b25244ad184e17dcb1578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIFramework.ColorStackSort::ColorStackSort.TubeFeedback
-  _body: {fileID: 783531673572662810}
-  _sweep: {fileID: 7362007704833745713}
+  _body: {fileID: 6332332613345184114}
+  _sweep: {fileID: 6654435433936980370}

@@ -345,6 +345,41 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-08-11 — ColorStackSort Phase 7: visual polish fixes (post-playtest bug batch)
+
+**Bug fix, root cause non-obvious (Unity RectTransform anchor-fraction math).** Four playtest
+reports, one plan, one batched Tier-2 fix:
+
+1. **Balls stacked from tube center, not bottom.** `ColorStackSortPrefabBuilder.CreateTube`'s
+   `Slots` child rect was full tube-height (118×400) with a bottom pivot — but Unity resolves a
+   point-anchored child's position against the PARENT'S RECT BOUNDS, independent of the parent's
+   own pivot, landing balls ~200 units too high. Fix: `Slots` height → 0, which collapses the
+   parent's rect bounds to a single point regardless of any child's anchor fraction. Visually
+   confirmed via Play Mode screenshot before/after.
+2. **Ball travel was a flat slide.** Replaced with a hand-rolled `DOVirtual.Float` parabola
+   (`BoardMoveAnimator.CreateJumpTween`) — deliberately NOT DOTween's own `DOJumpAnchorPos`, which
+   a plan reviewer flagged as unverifiable (closed-source DOTween.dll) when nested in an
+   already-staggered `Sequence`.
+3. **Tube-completion burst and win-panel confetti fired simultaneously.** Added a 0.4s
+   `UniTask.Delay` (unscaled, cancellable) — placed INSIDE the win-only branch of
+   `BoardView.RunAnimationAsync`, not before it, or it would have taxed every move including undos.
+4. **Completion sweep was invisible.** It was rendered through the tube body's 13%-alpha
+   background and left at UIEffect's default (unrelated) blue. Fixed: body alpha now flashes up for
+   the sweep's duration, and `transitionColor` is tinted to the tube's actual completed colour
+   (same value already computed for the burst — `BoardRenderer.CelebrateIfComplete`).
+
+**Process note worth keeping:** the first version of the Fix-1 regression test passed against the
+STILL-BROKEN prefab (false positive) because it measured a ball's position against the tube's own
+transform, and the tube's pivot is center — not bottom — so "close to zero" looked fine but was
+actually "close to the bug." Caught by treating an unexpectedly-green suite as suspicious rather
+than trusting it. See memory `unity-anchor-fraction-center-pivot-trap`.
+
+**Post-implementation review also caught:** the hand-rolled jump tween (`DOVirtual.Float`) had no
+`SetTarget`/`SetLink`, unlike the `DOAnchorPos` it replaced — meaning it couldn't be found by
+`rect.DOKill()` and wasn't auto-killed if its GameObject was destroyed mid-flight. Fixed.
+
+177/177 EditMode green (176 baseline + 1 new). No logic-assembly changes.
+
 ### 2026-08-02 — ColorStackSort Phase 6: juice (UIEffect + UIParticle)
 
 **Dependency added:** `com.coffee.ui-particle` pinned `#4.13.0` (bare git URL, no `?path=` segment

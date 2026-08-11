@@ -115,14 +115,16 @@ namespace ColorStackSort
             var tube = _tubes[tubeIndex];
             if (tube == null) return;
 
-            tube.PlayCompleteFeedback();
+            // Computed once, shared by the burst and the sweep, so the two celebrations for the
+            // same completion always agree on colour.
+            var tint = _palette.TintFor(container[0]);
+            tube.PlayCompleteFeedback(tint);
 
             if (_burstEmitter == null) return;
 
             // Burst at the top of the column, where the last ball just landed — not at the tube's
             // origin, which is its base.
-            _burstEmitter.Burst(
-                tube.SlotWorldPosition(container.Count - 1), _palette.TintFor(container[0]));
+            _burstEmitter.Burst(tube.SlotWorldPosition(container.Count - 1), tint);
         }
 
         public void Clear()

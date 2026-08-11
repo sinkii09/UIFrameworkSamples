@@ -24,6 +24,8 @@ namespace ColorStackSort
     [UIViewKey("ColorStackSort/BoardView")]
     public sealed class BoardView : UIView<BoardViewModel>
     {
+        private const float CelebrationBeatDelaySeconds = 0.4f;
+
         [SerializeField] private TubeView _tubePrefab;
         [SerializeField] private BallView _ballPrefab;
         [SerializeField] private RectTransform _tubeRow;
@@ -168,6 +170,8 @@ namespace ColorStackSort
                 // has landed. Cancellation reaches the catch below — v1.2.0 ShowAsync throws it.
                 if (isForwardMove && _isSolved)
                 {
+                    await UniTask.Delay(TimeSpan.FromSeconds(CelebrationBeatDelaySeconds),
+                        DelayType.UnscaledDeltaTime, cancellationToken: _scope.Token);
                     var args = new ColorStackSortWinArgs(ViewModel.Level.Value, ViewModel.MoveCount.Value);
                     await _navigator.ShowAsync<ColorStackSortWinView, ColorStackSortWinArgs>(
                         args, _scope.Token);

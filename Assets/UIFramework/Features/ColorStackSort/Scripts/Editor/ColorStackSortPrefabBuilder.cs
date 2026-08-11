@@ -101,7 +101,16 @@ namespace ColorStackSort.Editor
 
             // Balls live here, NOT on the tube root: Shake() animates this child so a LayoutGroup
             // on the tube row cannot overwrite it. No LayoutGroup on this object, ever.
-            var slots = UiPrefabFactory.CreatePoint("Slots", rect, new Vector2(TubeWidth, TubeHeight));
+            //
+            // Height MUST be 0, not TubeHeight. Slots renders nothing (no Image) — its rect exists
+            // only to anchor children. Unity resolves a point-anchored child's reference position
+            // from the PARENT'S RECT BOUNDS (yMin=-pivot.y*height, yMax=(1-pivot.y)*height),
+            // independent of the parent's own pivot. At height=400 that gives yMin=0, yMax=400, so
+            // a ball anchored at (0.5,0.5) lands at y=200 — the tube's true CENTER, not its bottom —
+            // before SlotPosition's offset is even added. Height 0 collapses yMin==yMax==0, so every
+            // child's Y-anchor resolves to Slots' true local origin regardless of its own anchor
+            // fraction, matching SlotPosition()'s "measured from the bottom" assumption for real.
+            var slots = UiPrefabFactory.CreatePoint("Slots", rect, new Vector2(TubeWidth, 0f));
             slots.anchorMin = slots.anchorMax = new Vector2(0.5f, 0f);
             slots.pivot = new Vector2(0.5f, 0f);
             slots.anchoredPosition = Vector2.zero;

@@ -37,7 +37,17 @@ namespace ColorStackSort
 
         private void Awake()
         {
-            if (_slotRoot == null) _slotRoot = (RectTransform)transform;
+            if (_slotRoot == null)
+            {
+                // Falling back to the tube's own transform is NOT equivalent: the tube root's pivot
+                // is (0.5, 0.5) — center — while Slots is deliberately a bottom-pivoted, zero-height
+                // rect (see ColorStackSortPrefabBuilder.CreateTube). Silently substituting it would
+                // reintroduce the exact "balls land near the tube's center" bug that fix corrected.
+                Debug.LogError($"[TubeView {name}] _slotRoot not assigned — falling back to the tube " +
+                                "root, which will misplace every ball. Re-run Tools/ColorStackSort/Build Prefabs.", this);
+                _slotRoot = (RectTransform)transform;
+            }
+
             if (_button != null) _button.onClick.AddListener(() => Tapped?.Invoke(Index));
         }
 
@@ -152,9 +162,9 @@ namespace ColorStackSort
         /// Celebrates this tube being completed. Delegated rather than implemented here so the
         /// UIEffect dependency stays inside <see cref="TubeFeedback"/>.
         /// </summary>
-        public void PlayCompleteFeedback()
+        public void PlayCompleteFeedback(Color tint)
         {
-            if (_feedback != null) _feedback.PlayComplete();
+            if (_feedback != null) _feedback.PlayComplete(tint);
         }
 
         public void ClearBalls()
