@@ -48,6 +48,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/MVVM/UIViewBase.cs` | Caches `CanvasGroup`, `RectTransform`; drives show/hide lifecycle |
 | `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
 | `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
+| `Runtime/Controls/Collections/RecyclerView.cs` (+ `.Pump`/`.Cells`) | Recycling list — live cell count tracks the viewport, not the item count (10k items ≈ 11 cells). Phase 1 = uniform declared cell size. Pure `RecycleWindow` decision function tested in EditMode; integration surface in PlayMode. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
 | `Runtime/Core/Lifecycle/TransitionOverlayView.cs` | Resident full-screen overlay on the `Overlay` layer; shown/hidden by `GameLifecycleManager` around every state transition to hide the blank-screen gap. Optional per-game — see `ITransitionOverlay`/`NullTransitionOverlay`. |
 | `Runtime/Core/Persistence/JsonSaveService.cs` | `ISaveService` impl — inject it, call `SaveAsync(poco)` / `LoadAsync<T>()`. Key defaults to `typeof(T).Name`. Orchestration only: per-key locking, R3 events, backup policy. |
@@ -344,6 +345,45 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 ---
 
 ## Recent Changes
+
+### 2026-08-18 — RecyclerView Phase 1: first test run, 18 failures, 1 CRITICAL fix
+
+**In-flight feature completed and verified.** The 51 tests written alongside `RecyclerView` had
+never actually been executed. Running them surfaced 18 failures — all test-side — plus a review
+that found one genuine CRITICAL in the runtime:
+
+1. **10 CellPool failures: a MonoBehaviour cannot live in an editor-only assembly.**
+   `AddComponent<TestCell>()` returned null because `Tests/Editor/` compiles with
+   `includePlatforms: ["Editor"]`; Unity refuses to attach such scripts, and the error names the
+   *file*, not the class. `CellPool.DestroyAll` also calls `Object.Destroy`, illegal in edit mode.
+   Pool tests moved to the PlayMode assembly. Rule: **a test needing a real GameObject with your own
+   MonoBehaviour on it is a PlayMode test.**
+2. **8 ScrollAxis failures: a wrong XML doc became a wrong test.** `ViewportStart` was documented as
+   the inverse of `ToLocal`; it is the negative — one places cells inside the content root, the other
+   reads the content root's own position, and content travels the opposite way. Tests rewritten
+   table-driven against concrete per-direction positions; doc corrected.
+3. **CRITICAL (runtime): the pump's iteration cap was a fixed 64.** A reseed grows the window one
+   cell per iteration, so a 1920px viewport with 30px rows needs ~77 — past the cap the pump logged
+   an error and abandoned the tick every frame, leaving a permanently under-filled list. Now derived
+   from geometry via `RecycleWindow.MaxIterationsFor`. The prior design memo had rejected
+   SuperScrollView's 9999 bail-out as "never having proved termination" — 64 was the same unproven
+   bound, only tight enough to actually hit.
+
+Also closed: `SetCellProvider` now pumps; `RentCell` refuses out-of-provider and double-rent calls
+(both leaked silently); a provider that rented then returned null no longer loses the cell;
+`RefreshIndex` on a throwing provider no longer strands a staged cell; `ScrollToIndex`/
+`ForEachShownCell` gained the reentrancy guard the other mutators had.
+
+**Coverage went from 0 integration tests to 19** (`RecyclerViewVirtualizationTests`,
+`RecyclerViewContractTests`, `RecyclerViewTestHarness`), covering the ~530 previously untested LOC.
+Final: **EditMode 62/62, PlayMode 90/90.**
+
+Added `GameObject > UI > UIFramework > Recycler View` and the `Samples~/RecyclerViewList` consumer.
+
+> Machine note: the Unity test runner failed mid-session with `Failed to create CoreCLR` /
+> `GC heap initialization failed`, which reads like a compile error but is system commit exhaustion
+> (22.1 GB of a 23.7 GB limit). Reclaiming idle MSBuild worker nodes and restarting the Roslyn
+> compiler server cleared it.
 
 ### 2026-08-11 — ColorStackSort Phase 7: visual polish fixes (post-playtest bug batch)
 
