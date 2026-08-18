@@ -346,6 +346,23 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-08-18 — UIFramework v1.4.0 + v1.4.1 released, project repinned
+
+Shipped the RecyclerView work below as **v1.4.0**, then **v1.4.1** as a packaging fix: three
+orphaned `.meta` files (`Runtime/Core/Pooling.meta`, `Runtime/Resources.meta`,
+`Runtime/Resources/UIFramework.meta`) outlived their folders and made every consuming project warn
+on import — git cannot store an empty directory, so Unity found each `.meta` without its folder,
+recreated it, and warned. Both tagged, pushed, and published as GitHub releases (the repo had none
+before).
+
+`Packages/manifest.json` moved off the local `file:` development pin onto
+`…com.sinkii09.uiframework.git#v1.4.1` (lock hash `169d0c0`). Verified against the packaged copy:
+EditMode 62/62, PlayMode 90/90, no import warnings.
+
+> `package-add` with a git URL exceeds the unity-mcp-cli 60s tool timeout and reports
+> `Tool call timed out` — the operation still completes. Check `manifest.json`, `packages-lock.json`
+> and `Library/PackageCache/<pkg>@<hash>` rather than trusting the error.
+
 ### 2026-08-18 — RecyclerView Phase 1: first test run, 18 failures, 1 CRITICAL fix
 
 **In-flight feature completed and verified.** The 51 tests written alongside `RecyclerView` had
