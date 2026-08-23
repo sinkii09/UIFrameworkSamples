@@ -48,7 +48,8 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/MVVM/UIViewBase.cs` | Caches `CanvasGroup`, `RectTransform`; drives show/hide lifecycle |
 | `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
 | `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
-| `Runtime/Controls/Collections/RecyclerView.cs` (+ `.Pump`/`.Cells`) | Recycling list — live cell count tracks the viewport, not the item count (10k items ≈ 11 cells). Phase 1 = uniform declared cell size. Pure `RecycleWindow` decision function tested in EditMode; integration surface in PlayMode. |
+| `Runtime/Controls/Collections/RecyclerView.cs` (+ `.Pump`/`.Cells`) | Recycling list — live cell count tracks the viewport, not the item count (10k items ≈ 11 cells). Cell sizes are **declared, never measured**: uniform by default, per-index via `SetItemSizeProvider`. Pure `RecycleWindow` decision function tested in EditMode; integration surface in PlayMode. |
+| `Runtime/Controls/Collections/IItemOffsets.cs` (+ `UniformOffsets`, `PrefixSumOffsets`) | Where each item sits in offset space. Pure, no Unity types. `UniformOffsets` reproduces the pre-variable-size arithmetic exactly and is the regression anchor; `PrefixSumOffsets` carries per-index declared sizes. Spacing is included in offsets, excluded from sizes. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
 | `Runtime/Core/Lifecycle/TransitionOverlayView.cs` | Resident full-screen overlay on the `Overlay` layer; shown/hidden by `GameLifecycleManager` around every state transition to hide the blank-screen gap. Optional per-game — see `ITransitionOverlay`/`NullTransitionOverlay`. |
 | `Runtime/Core/Persistence/JsonSaveService.cs` | `ISaveService` impl — inject it, call `SaveAsync(poco)` / `LoadAsync<T>()`. Key defaults to `typeof(T).Name`. Orchestration only: per-key locking, R3 events, backup policy. |
@@ -345,6 +346,58 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 ---
 
 ## Recent Changes
+
+### 2026-08-23 — UIFramework v1.5.0 released, project repinned
+
+Shipped the RecyclerView Phase 2 work below as **v1.5.0** (`d4d299c`), tagged, pushed, GitHub release
+created. `Packages/manifest.json` repinned from the temporary `file:../../com.sinkii09.uiframework`
+dev path back to the git tag; lock hash `d4d299c`.
+
+Verified against the **tagged** package, not the local path: **EditMode 257/257 · PlayMode 105/105**.
+
+Both runs used Unity **batch mode** (`-batchmode -runTests`) because the MCP bridge was down — the
+plugin hosts the server and it had not started this session. Note `-quit` must **not** be combined
+with `-runTests`: Unity honours the quit and shuts down before running anything, producing a log that
+ends in "Batchmode quit successfully invoked" and no results file.
+
+### 2026-08-22 — RecyclerView Phase 2: variable cell size
+
+`SetItemSizeProvider(Func<int,float>)` and `RefreshSizes()` on `RecyclerView`. Sizes are **declared,
+never measured** — the view asks before it binds, so content extent and every cell position are exact
+from the first frame and the list never shifts to correct an estimate. SuperScrollView instead
+measures-then-corrects, and most of its complexity lives in that machinery.
+
+There is deliberately no per-index size setter. An earlier draft had one; it was silently discarded
+by the next `SetItemCount` (the rebuild re-asks the provider), and making it persist would have been
+worse — an override keyed by index outlives the item it was meant for the moment the list's contents
+shift, rendering the wrong row tall. One source of truth instead: keep size in the consumer's data,
+call `RefreshSizes()`.
+
+Smaller than expected: Phase 1 had pre-built the scaffolding (`CellHandle.DeclaredSize`,
+`WindowState.HeadSize`/`TailSize`) and **`RecycleWindow.Decide`/`NeedsReseed` never referenced
+stride**, so the recycling core needed no change at all. Only the offset *supply* was hardcoded —
+9 call sites, now behind a pure `IItemOffsets`.
+
+Three latent bugs surfaced while implementing, each invisible under uniform sizing:
+
+- `ContentLayout.ConfigureCell` sized cells once per `Instantiate`, so a pooled cell kept the size of
+  whichever index first created it.
+- `Rebind` wrote no size at all — `RefreshIndex` on a multi-prefab list rendered the refreshed cell at
+  its replacement's size. Invisible to any single-prefab test.
+- The content rect was rebuilt only by `SetItemCount`, which sufficed only while count was the one
+  thing that could move an offset.
+
+**Two more defects passed all 362 green tests** and are the entry worth remembering: a reentrancy
+flag that was set but never *read* (found by grepping the symbol, not by testing), and a size
+provider that, on throw, stayed installed and made every later `SetItemCount` throw forever — the
+test asserted the offset table survived but never called anything afterwards. Both are the same
+shape: code that looks like it satisfies a requirement, with the step that actually satisfies it
+missing.
+
+Package commit `5d649bb` on `feature/recycler-view-phase2`. **EditMode 258/258 · PlayMode 106/106**,
+zero pre-existing test assertions changed — the `UniformOffsets` parity anchor held.
+
+Released as **v1.5.0** — see the entry above.
 
 ### 2026-08-18 — UIFramework v1.4.0 + v1.4.1 released, project repinned
 
