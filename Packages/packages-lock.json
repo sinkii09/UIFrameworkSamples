@@ -43,7 +43,7 @@
       "hash": "acc1c7bc9ea34c33b830e40316fca52553878d29"
     },
     "com.ivanmurzak.unity.mcp": {
-      "version": "0.89.0",
+      "version": "0.90.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -54,7 +54,7 @@
       "url": "https://package.openupm.com"
     },
     "com.sinkii09.uiframework": {
-      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.5.0",
+      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.6.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -62,7 +62,7 @@
         "com.unity.inputsystem": "1.19.0",
         "com.unity.nuget.newtonsoft-json": "3.2.2"
       },
-      "hash": "d4d299c3c939ac3920e99c43e3a693dc9ff94e59"
+      "hash": "56ccf2038447fdba5422a501c10886f55ab91439"
     },
     "com.unity.2d.animation": {
       "version": "14.0.3",
