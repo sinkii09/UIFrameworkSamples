@@ -4,8 +4,8 @@
 Unity 6 project combining the Sinkii09 UIFramework package (MVVM + DI) with a Memory Flip Card Game that demonstrates full framework integration. The game is complete and playable with sound, animations, and win detection.
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — **pinned git tag** as of 2026-08-02:
-  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.3.0"`.
+- **com.sinkii09.uiframework** — **pinned git tag** as of 2026-08-29:
+  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.6.0"`.
   For most of 2026-08-01/02 this was instead a local path dependency
   (`"file:../../com.sinkii09.uiframework"`), used deliberately so framework fixes could be
   compile-verified from this project before being tagged. That mode consumes the other repo's
@@ -54,6 +54,11 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/Lifecycle/TransitionOverlayView.cs` | Resident full-screen overlay on the `Overlay` layer; shown/hidden by `GameLifecycleManager` around every state transition to hide the blank-screen gap. Optional per-game — see `ITransitionOverlay`/`NullTransitionOverlay`. |
 | `Runtime/Core/Persistence/JsonSaveService.cs` | `ISaveService` impl — inject it, call `SaveAsync(poco)` / `LoadAsync<T>()`. Key defaults to `typeof(T).Name`. Orchestration only: per-key locking, R3 events, backup policy. |
 | `Runtime/Core/Persistence/LocalFileStorageBackend.cs` | The one storage swap seam (`IStorageBackend`). Atomic writes to `persistentDataPath/Saves/<key>.json` + rolling `.bak`. |
+| `Runtime/Core/Config/UIViewPolicyConfig.cs` (+ `UIViewPolicyResolver`) | Per-view `Resident` / `NeedsBackdrop` / `PreloadOnBoot`, keyed by **load key** not class name. Inspector-only asset on `UIFrameworkLifetimeScope`; empty means framework defaults for every view. Resolver is registered unconditionally and is a null-object when no asset is assigned. |
+| `Runtime/Core/MVVM/UIViewCacheSweeper.cs` | Entry point running a `UniTask.Delay` loop that calls `UIViewFactory.SweepAsync`. Destroys views idle past `ViewCacheGraceSeconds` (`0` = off, the default). Only registered when eviction is enabled. |
+| `Runtime/Core/MVVM/UIBackdrop.cs` | One reusable dim `Image` parked directly beneath any view whose policy sets `NeedsBackdrop`. Driven by `UINavigator.RefreshLayerBlocking` — same authority as layer blocking. Colour from `UIFrameworkConfig.BackdropColor`. |
+| `Runtime/Core/MVVM/UIViewPreloader.cs` | Warms `PreloadOnBoot` views into the factory cache. Never runs on its own — call `PreloadAllAsync()` from the game's boot sequence. Saves the load, the `Instantiate` and the reparent; **not** the scope or the ViewModel, which are rebuilt on first show. |
+| `Runtime/Core/DI/UIViewKeys.cs` | `For(Type)` — the single source of load-key derivation, previously duplicated in `UIViewFactory.GetKey` and `UIViewRegistry.AutoRegister` with nothing keeping them in agreement. |
 
 **Persistence (added v1.1.0):** missing save → `null`; a file that is present but not a valid
 envelope → recovers from the `.bak`, else throws. `SaveAsync(null)` throws. Renaming a save POCO
@@ -346,6 +351,99 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 ---
 
 ## Recent Changes
+
+### 2026-08-29 — UIFramework v1.6.0 released, project repinned
+
+Shipped a four-feature sprint as **v1.6.0** (`56ccf20`), merged to `main`, tagged and pushed.
+`Packages/manifest.json` repinned from the temporary `file:../../com.sinkii09.uiframework` dev path
+back to the git tag. Verified against the **tagged** package, not the local path:
+**EditMode 257/257 · PlayMode 165/165** (PlayMode was 105 at v1.5.0 — the sprint added 60).
+
+What landed, all **default-OFF** so this project's behaviour is unchanged until the new config
+assets are authored:
+
+- **`UIViewPolicyConfig`** — per-view `Resident` / `NeedsBackdrop` / `PreloadOnBoot` flags, keyed by
+  the view's **load key** (its `[UIViewKey]` value, else the class name) because a ScriptableObject
+  cannot serialize a `Type`. Assign on `UIFrameworkLifetimeScope`; Inspector-only, no Resources
+  fallback. Boot-time validation warns on any key matching no registered view.
+- **Timed cache eviction** — `UIViewCacheSweeper` destroys views idle past
+  `UIFrameworkConfig.ViewCacheGraceSeconds` (`0` = disabled, the default). Before this,
+  `UIViewFactory._cache` only ever grew: every view a player opened held its GameObject and its
+  loader handle for the whole session.
+- **`UIBackdrop`** — one reusable dim `Image` under any view whose policy sets `NeedsBackdrop`.
+- **`UIViewPreloader`** — warms `PreloadOnBoot` views. Nothing preloads automatically; the game calls
+  `PreloadAllAsync()` itself.
+
+Two latent `UINavigator` bugs were closed with the backdrop, because a full-screen raycast blocker
+turns both from invisible raycaster mis-toggles into softlocks: a push declined at
+`MaxNavigationDepth` (which warns and returns rather than throwing) left blocking applied for a view
+never pushed, and a view deactivated by a failed hide was still top-of-stack when the navigator
+refreshed against it.
+
+**If this project adopts eviction**, note the trap: any view held directly from the factory (the
+HUD-channel pattern) must be marked `Resident`, or it is destroyed once hidden past the grace period
+and the held reference becomes a Unity-null. Framework docs: the Obsidian vault's
+`View Policy & Caching.md`.
+
+### 2026-08-29 — UI/BorderTraceFrame: per-tier color + prismatic shimmer (`Assets/UIFramework/Samples/`)
+
+Follow-up to the same-day `UIBorderTraceFrame.shader` addition below: replaced the always-on
+rainbow hue-cycle (`_HueSpeed`, removed) with a static, per-tier-configurable `_FrameColor`,
+plus an optional `_PrismaticShimmer` (0..1) blend toward an animated multi-hue sweep for the
+highest rarity tier — hue varies by **perimeter position** (`perim`, reused from the comet
+math) as well as time, so several colors are visible around the ring at once instead of the
+whole ring flashing one color. `UIBorderTraceFrame_mat.mat` migrated via `script-execute`
+(`SerializedObject` array-delete) to drop the orphaned `_HueSpeed` entry Unity doesn't
+auto-prune from `.mat` YAML when a shader's properties change, and given starter values for
+the new properties.
+
+Tier 1 diff review (code-reviewer) verified 6 design claims (removal completeness, spatial-vs-
+time-only shimmer, single shared `perim`, intensity applied once, half-precision discipline,
+downstream premultiply/clip untouched) all held, then caught 2 WARNINGs: `_ShimmerFrequency`
+was a continuous `Range(1,8)` float, but the shimmer hue math (`frac(perim*freq + t*speed)`)
+is only continuous across the perimeter's `atan2` wrap point when `freq` is a whole number —
+a non-integer value paints a hard color seam down one edge; fixed with `[IntRange]`. The
+sample material still carried the stale `_HueSpeed` value and had none of the new properties
+set (would ship as a flat, non-demonstrating default) — fixed via the migration script above.
+
+### 2026-08-29 — UI/BorderTraceFrame sample shader (`Assets/UIFramework/Samples/`)
+
+Added `UIBorderTraceFrame.shader` + `UIBorderTraceFrame_mat.mat`: a procedural neon square
+frame with two bright comet highlights traveling around its edge, 180° apart, moving together.
+Ignores `_MainTex` content entirely (pure geometry-driven effect) — drops onto any UI `Image`
+whose sprite spans 0..1 UV across the rect (Simple image type, no atlas/9-slice; documented in
+the shader header). Border-trace-only rebuild, by user request, of the never-shipped
+`UI_QualityGlow_Qua7.shader` scratchpad prototype from the external-game reverse-engineering
+session earlier this session — orb-fill and sparkle layers dropped (YAGNI), only the
+edge-traveling highlight kept, doubled to two comets instead of one.
+
+Tier 1 diff review (code-reviewer) round 1 caught 1 CRITICAL (`OUT.localUV = v.texcoord`
+silently breaks for atlased/9-sliced sprites — the common default-Image-setup case — documented
+as an explicit usage constraint rather than solved generically, since deriving true rect-relative
+UV for arbitrary Image Types needs data a stock shader doesn't have) and 4 WARNINGs: dead outer-
+ring smoothstep (`ringOuter` sat exactly at the UV boundary `boxDist` never exceeds, so the outer
+edge hard-clipped instead of fading — fixed by insetting `ringOuter` by `_FrameSoftness`); comet
+tail width unclamped (`width*3` could exceed the 0.5 wrap point and seam against the lead width —
+clamped to 0.49); a self-inflicted `fmod(t,100)` time-wrap pop (appropriate for the prior
+noise-domain-warp shader, wrong here — removed, since this shader has no noise domain requiring
+bounded precision); and an `atan2(0,0)` NaN at the exact rect centre (epsilon-guarded). All fixed
+and re-verified compile-clean (`assets-shader-get-data` → `HasErrors: false`).
+
+### 2026-08-29 — UI/AnimatedGlow sample shader (`Assets/UIFramework/Samples/`)
+
+Added `UIAnimatedGlow.shader` + `UIAnimatedGlow_mat.mat`, animating the existing static
+`show1_glow_00067_tex.png` (no companion flipbook frames) via two independently-scrolling
+domain-warp noise layers + a breathing brightness pulse, additive-blended for a light-emitting
+UI glow look. Standalone sample asset — doesn't touch the UIFramework package or any feature.
+
+Tier 1 diff review (code-reviewer) caught one CRITICAL (premultiply happened before the
+`RectMask2D`/`UnityGet2DClipping` factor was applied, so the glow ignored scroll-view/mask
+clipping entirely under `Blend One One`) and 6 WARNINGs — most notably `fixed4`/lowp overflow
+past ±2 on GLES/mobile from the brightness×pulse chain, and brightness/pulse being folded into
+the alpha used for premultiply (squaring both once multiplied through). All fixed; also caught
+one more instance of the same return-type-precision mistake in self-verification after the first
+round of fixes (`frag`'s return type was left as `fixed4`, silently undoing the half4 conversion
+at the final return). Shader compiles clean (`HasErrors: false`) post-fix.
 
 ### 2026-08-23 — UIFramework v1.5.0 released, project repinned
 
