@@ -356,6 +356,35 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-01 — Async lifetime utilities (UIFramework v1.8.0)
+
+Two additive API pieces plus one documentation-only change. Theme: async work started from UI must
+have a defined owner, cancellation point, and restore-on-exit. Nothing existing changed signature.
+
+- **`ViewModelBase.ShowToken`** — per-show `CancellationToken`, the token half of
+  `_showDisposables`. Cancelled on hide, fresh on next show. Closes a real gap: a ViewModel had a
+  per-show disposable bag but no per-show cancellation, so work begun in `OnShow()` ran until the
+  ViewModel was disposed — for a cached view, possibly never. Views were already covered
+  (`OnShowAsync`/`OnHideAsync` take a `ct`).
+- **`UIBindingExtensions.BindButtonAsync`** — async click handler with a re-entrancy guard.
+  Previously the house style was a sync `UnityAction` firing `.Forget()`, and nothing stopped N
+  presses launching N concurrent operations. `disableWhileRunning` defaults to `false` (the guard is
+  the correctness mechanism; disabling the button is cosmetic and conflicts with
+  `BindToInteractable`).
+- **`TabIndicator`** — comment only, no behaviour change. Its bare `DOKill()` is correct today
+  because it tweens `anchoredPosition` only; the comment names the invariant so the next person
+  adding a scale/colour tween there does not silently create a corruption site.
+
+Reviewed twice (plan + diff). The diff review caught three defects that compiled clean and passed
+tests: a throwing per-show disposable could strand the ViewModel on a cancelled token permanently
+(`BindButtonAsync`'s own listener-removal disposable makes that reachable —
+`Button.onClick.RemoveListener` throws once the Button is destroyed); the `running` guard could
+latch forever if the prologue threw; and `NotifyHide` lacked the re-entrancy guard `Dispose` had.
+
+Released as **v1.8.0**, tagged and pushed. TheEnd repinned to
+`https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.8.0`, and both suites re-run against
+the pushed tag rather than the local working copy: EditMode 267 passed, PlayMode 205 passed.
+
 ### 2026-08-31 — Tooltip system (UIFramework, targeting v1.7.0)
 
 New `Runtime/Core/Tooltip/` (13 files) + `TooltipTrigger` control + `UIFrameworkUIRootUpgrader`
