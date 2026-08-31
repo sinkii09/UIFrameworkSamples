@@ -58,6 +58,10 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/MVVM/UIViewCacheSweeper.cs` | Entry point running a `UniTask.Delay` loop that calls `UIViewFactory.SweepAsync`. Destroys views idle past `ViewCacheGraceSeconds` (`0` = off, the default). Only registered when eviction is enabled. |
 | `Runtime/Core/MVVM/UIBackdrop.cs` | One reusable dim `Image` parked directly beneath any view whose policy sets `NeedsBackdrop`. Driven by `UINavigator.RefreshLayerBlocking` — same authority as layer blocking. Colour from `UIFrameworkConfig.BackdropColor`. |
 | `Runtime/Core/MVVM/UIViewPreloader.cs` | Warms `PreloadOnBoot` views into the factory cache. Never runs on its own — call `PreloadAllAsync()` from the game's boot sequence. Saves the load, the `Instantiate` and the reparent; **not** the scope or the ViewModel, which are rebuilt on first show. |
+| `Runtime/Core/Tooltip/TooltipService.cs` (+ `TooltipViewIndex`, `TooltipPositioner`) | Resident single-instance tooltip owner. Deliberately **off** the nav stack (extends `UIViewBase`, not `UIView<T>`). Timing state machine `Idle→Pending→Shown→Grace` advances in `Tick()` off `Time.unscaledDeltaTime`, so it works at `timeScale = 0` and is frame-testable. Must be registered with `RegisterEntryPoint` or `Initialize`/`Tick` never dispatch. |
+| `Runtime/Core/Tooltip/TooltipViewBase.cs` (+ `TooltipView`, `TooltipContent`) | Tooltip view base + the built-in sections view (title/icon/body/stat lines/footer). Subclass and set `_viewKey` for a custom look. Never takes raycasts — re-asserted after both `ShowAsync` and `HideAsync`. |
+| `Runtime/Controls/Core/TooltipTrigger.cs` | Raises tooltips from hover / click / focus / touch long-press. Payload from `ITooltipSource` on the widget, or inline title/body. `NotifyContentChanged()` for pooled cells rebound in place. |
+| `Editor/Tools/UIFrameworkUIRootUpgrader.cs` | `Tools/UIFramework/Upgrade UIRoot Layers` — adds missing layer children and wires `_layers` on existing UIRoots. Required migration for any project created before a layer was added; also the wiring path the installer wizard never had. |
 | `Runtime/Core/DI/UIViewKeys.cs` | `For(Type)` — the single source of load-key derivation, previously duplicated in `UIViewFactory.GetKey` and `UIViewRegistry.AutoRegister` with nothing keeping them in agreement. |
 
 **Persistence (added v1.1.0):** missing save → `null`; a file that is present but not a valid
@@ -351,6 +355,63 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 ---
 
 ## Recent Changes
+
+### 2026-08-31 — Tooltip system (UIFramework, targeting v1.7.0)
+
+New `Runtime/Core/Tooltip/` (13 files) + `TooltipTrigger` control + `UIFrameworkUIRootUpgrader`
+editor command. Four input sources (hover / click / focus / touch long-press), two content models
+(built-in `TooltipContent` sections view, or a project's own `TooltipViewBase` prefab by key).
+
+**`UILayer` gained a `Tooltip` member, inserted between `Popup` and `Overlay`** (sortOrder 250).
+The ordinal is load-bearing (`BlockLayersBelow` compares `(int)layer`), so this was only safe
+because a grep of both repos confirmed no `UILayer` value is serialized anywhere — every use is a
+code-level `override Layer => UILayer.X`. Re-verify that before inserting another.
+
+`UINavigator` gained a **trailing-optional** `ITooltipService` parameter (after `UIBackdrop`) and
+calls `HideImmediate()` on `ShowAsync`/`CloseAllAsync`/`ChangeStateAsync`. Trailing-optional
+mirrors the existing `UIBackdrop` precedent so the positional `new UINavigator(...)` calls in tests
+keep compiling — it is *not* an optional dependency; VContainer ignores C# defaults, so any
+hand-built container must register one.
+
+**Migration required for existing projects:** run `Tools/UIFramework/Upgrade UIRoot Layers`. An
+existing UIRoot deserialises `Tooltip` as null and `SetLayerInteractable` returns *silently* on a
+null transform, so the failure would be invisible. The service falls back to the Overlay layer with
+a one-shot error if the layer is still missing.
+
+Gates: compile clean; **EditMode 257 passed, PlayMode 197 passed** (baseline 165 + 32 new tooltip
+tests). Three review gates ran; the plan gate and its delta gate together corrected 9 design
+defects before implementation, and the diff gate found 3 CRITICALs after. See
+`plans/260830-1206-tooltip-system/plan.md` and the four reports in `plans/reports/`.
+
+### 2026-08-30 — UI/EnergyCoreOrb sample shader (`Assets/UIFramework/Samples/`)
+
+Added `UIEnergyCoreOrb.shader` + six per-tier materials (`UIEnergyCoreOrb_qua{3..8}_mat.mat`).
+Fully procedural emissive orb — soft halo, ridged swirling filaments on a fake sphere remap,
+pulsing core with starburst arms, twinkling sparks, rim band. Additive (`Blend One One`), no
+`_MainTex` sample, UV from `IN.texcoord`. Replaces the 16-frame-per-tier flipbook
+(`item_cell_qua/qua{3..8}_{1..16}.png`, 96 PNGs / ~3.2 MB) from the Phoenix reference dump, which
+stays untouched. Palettes were sampled from the reference pixels, not eyeballed — which revealed
+two tiers are structurally different effects, hence `_CoreIntensity` (0 = qua3's hollow ring) and
+`_Prismatic` (qua7's iridescence).
+
+Honest trade-off: this is *more* GPU than the flipbook (~150 ALU/px vs one texture fetch). The win
+is atlas size, runtime recolor and resolution independence. An early-out (`r > cullRadius` →
+return 0) skips ~21% of the quad to keep an inventory grid affordable.
+
+Built on `UIAnimatedGlow.shader`'s reviewed CGPROGRAM boilerplate. Two reviewer gates (plan +
+diff). The plan gate killed the seam fix outright: `[IntRange] _Strands` works only when the
+angular coord is normalised 0..1, so `atan2` was removed from the noise domain entirely and the
+swirl is a Cartesian rotation — which also removes the need for any `fmod` time wrap, since
+rotation preserves magnitude. Diff gate found 1 CRITICAL (rgb multiplied by shape twice, driving
+the halo to ~1e-4) plus a dead `_RimRadius` in both materials. Both fixed and re-verified.
+
+Verified via `unity-mcp-cli run-tool` (the session's MCP tools were down): `ShaderHasError` false,
+`isSupported` true, `GetShaderMessageCount` 0, all six materials bound; plus an offscreen
+`RenderTexture` render of every tier compared against the reference frames.
+
+**Usage constraint (in the shader header too):** Image `Source Image` must be EMPTY and Type =
+Simple — a null sprite is what guarantees a 0..1 rect UV. The RectTransform must be square; there
+is no aspect correction, so a non-square cell renders an ellipse.
 
 ### 2026-08-29 — UIFramework v1.6.0 released, project repinned
 
