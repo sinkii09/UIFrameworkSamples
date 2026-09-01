@@ -356,6 +356,67 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-02 — Navigation reports refusal (UIFramework v2.0.0, Phase 1a)
+
+Second phase of the Melvor-patterns sprint. Every guarded navigation entry point now returns
+`NavigationResult { Completed, Rejected }` instead of a bare `UniTask`.
+
+**The defect.** Navigation guards drop requests that arrive mid-transition, but returned a `UniTask`
+that completed normally — so an awaiting caller could not tell "the view is on screen" from "your
+request was discarded", and carried on updating its own state as though it had happened. Two guards
+refused with no log whatsoever: `UINavigator.HideAsync`'s transitioning check, and
+`GameLifecycleManager.RestartCurrentStateAsync`'s null-current-state check (reachable whenever a
+Retry button is wired up before `StartAsync` — symptom: a button that does nothing, silently).
+
+Refusal turned out to have **more sources than the transition guard**: `NavigationStack` also
+declines a push past `MaxNavigationDepth` and a pop on an empty stack. Both were reporting success.
+
+**This is source-breaking.** `await nav.ShowAsync<T>()` and `.Forget()` still compile; what breaks is
+*returning* the task directly from a `UniTask`-returning method — `=> _navigator.ShowAsync<X>(ct);`
+in an `IGameState.OnEnterAsync`. Four such sites in TheEnd were migrated to `await` (one also needed
+`async` added): `MemoryGameState` (×2), `ColorStackSortGameplayState`, `AircraftGameplayState`.
+
+The diff review caught a **critical** the implementation missed: `ShowAsync` already *detected* a
+declined push — it re-derives layer blocking on exactly that branch — and then returned `Completed`
+anyway, leaving the headline bug alive on the most-used entry point. Following that up found the
+same false-success in `PopAsync`, which discarded `NavigationStack.PopAsync`'s null return. Also
+fixed: `StartAsync` and `LoadSceneAndChangeStateAsync` were discarding results; `Cancelled` was
+dropped from the enum as unreachable (cancellation still throws) pending the queued path.
+
+EditMode **276 passed**, PlayMode **212 passed** (205 baseline + 7 new).
+
+### 2026-09-01 — Fail-fast view validation (UIFramework v1.9.0, Phase 5)
+
+First phase of the Melvor-patterns sprint (plan: `C:\Users\user\.claude\plans\wiggly-exploring-candle.md`;
+execution order 5 → 1a → 1b → 4 → 2 → 3 → 6). Released **separately** from Phase 1a rather than
+paired with it as the plan originally had: 1a turned out to be source-breaking, and this phase is
+purely additive, so it did not deserve to be buried inside a major bump.
+
+- **`UIViewValidator`** (new) — reports every unassigned `[SerializeField]` `UnityEngine.Object`
+  reference on a view in one error naming the fields, so a misconfigured prefab is identified at
+  `Awake` instead of surfacing later as a `NullReferenceException` inside a binding lambda whose
+  stack trace points at framework code. Editor/development builds only; call sites are stripped by
+  `[Conditional]` and the body compiles away in a release player.
+- **`[UIOptional]`** (new attribute) — exempts fields where null is meaningful. Applied to
+  `UIViewBase._showTransition`/`_hideTransition`; without it every transition-less view in every
+  consuming project would be reported.
+- **`UIViewBase.Awake`** calls the validator; **`UIViewFactory`** repeats the call after
+  `Instantiate` as a backstop, because `Awake` is `protected virtual` and an override that forgets
+  `base.Awake()` would otherwise skip validation silently. Reports are deduped per view type.
+
+Reviewed post-implementation. The review produced four warnings, all resolved: the "every view is
+covered" claim was false (the `virtual Awake` bypass above); repeated logging per instance; a
+`readonly` false positive; and — the important one — **nothing pinned the two `UIViewBase` edits**,
+so deleting `[UIOptional]` would have broken every consuming project with the suite still green.
+
+Two traps worth remembering. Unity does **not** call `Awake` on `AddComponent` outside play mode, so
+the first integration test written for that gap passed vacuously; it now invokes `Awake` reflectively.
+And the `[UIOptional]` guard was then **mutation-tested** — removing the attribute turns the suite
+red on exactly that test, and restoring it returns 9/9 — because a test written to catch a regression
+is worth nothing until it has been seen to fail.
+
+EditMode **276 passed, 0 failed** (267 baseline + 6 + 3 new).
+
 ### 2026-09-01 — Async lifetime utilities (UIFramework v1.8.0)
 
 Two additive API pieces plus one documentation-only change. Theme: async work started from UI must
