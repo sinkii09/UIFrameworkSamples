@@ -72,7 +72,7 @@ namespace AircraftStriker
             _gameplay.StartGame();
         }
 
-        public UniTask OnExitAsync(CancellationToken ct = default)
+        public async UniTask OnExitAsync(CancellationToken ct = default)
         {
             _gameplay.StopGame();
             if (_playerInstance != null)
@@ -81,7 +81,7 @@ namespace AircraftStriker
                 _playerInstance = null;
             }
             _gameplay.SetPlayerTransform(null);
-            return _navigator.CloseAllAsync(ct);
+            await _navigator.CloseAllAsync(ct);
         }
     }
 }

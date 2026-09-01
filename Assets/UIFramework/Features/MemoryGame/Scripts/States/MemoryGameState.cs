@@ -15,10 +15,12 @@ namespace MemoryGame
         public string SceneName => null;
         public bool PausesGameTime => false;
 
-        public UniTask OnEnterAsync(CancellationToken ct = default)
-            => _navigator.ShowAsync<GameplayView>(ct);
+        // Awaited rather than returned directly: the navigator now reports an outcome
+        // (UniTask<NavigationResult>), which does not convert to the UniTask this interface returns.
+        public async UniTask OnEnterAsync(CancellationToken ct = default)
+            => await _navigator.ShowAsync<GameplayView>(ct);
 
-        public UniTask OnExitAsync(CancellationToken ct = default)
-            => _navigator.CloseAllAsync(ct);
+        public async UniTask OnExitAsync(CancellationToken ct = default)
+            => await _navigator.CloseAllAsync(ct);
     }
 }

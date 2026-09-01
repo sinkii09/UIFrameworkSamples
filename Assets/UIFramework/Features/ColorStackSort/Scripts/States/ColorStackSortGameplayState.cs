@@ -38,7 +38,7 @@ namespace ColorStackSort
         /// <summary>Board motion is tween-driven, so nothing here depends on Time.timeScale.</summary>
         public bool PausesGameTime => false;
 
-        public UniTask OnEnterAsync(CancellationToken ct = default)
+        public async UniTask OnEnterAsync(CancellationToken ct = default)
         {
             // Read per entry, not per construction: Next advances the service and then re-enters,
             // so this is what makes the new level take effect.
@@ -48,7 +48,7 @@ namespace ColorStackSort
             // Deliberately unguarded. A failure here is a real one — a missing prefab or a bad
             // settings asset — and swallowing it would leave a blank screen with no explanation.
             // Only decorative work (overlays, sound) earns a catch in a state's enter path.
-            return _navigator.ShowAsync<BoardView, BoardArgs>(args, ct);
+            await _navigator.ShowAsync<BoardView, BoardArgs>(args, ct);
         }
 
         /// <summary>
