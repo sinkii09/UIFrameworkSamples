@@ -35,6 +35,27 @@
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
+    "com.esotericsoftware.spine.spine-csharp": {
+      "version": "https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-csharp/src#4.3",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2c66cc2899b920ed2d3043b10ceea4e75ef4373d"
+    },
+    "com.esotericsoftware.spine.spine-unity": {
+      "version": "https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.physics2d": "1.0.0",
+        "com.esotericsoftware.spine.spine-csharp": "4.3.36",
+        "com.unity.2d.sprite": "1.0.0"
+      },
+      "hash": "2c66cc2899b920ed2d3043b10ceea4e75ef4373d"
+    },
     "com.github-glitchenzo.nugetforunity": {
       "version": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
       "depth": 0,
@@ -54,7 +75,7 @@
       "url": "https://package.openupm.com"
     },
     "com.sinkii09.uiframework": {
-      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v1.8.0",
+      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v2.0.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -62,7 +83,7 @@
         "com.unity.inputsystem": "1.19.0",
         "com.unity.nuget.newtonsoft-json": "3.2.2"
       },
-      "hash": "879e73b8e73ad5830eb8437a54d71662e9d67685"
+      "hash": "24b485a2d612f7a41db203246a51912eaa76ea85"
     },
     "com.unity.2d.animation": {
       "version": "14.0.3",
