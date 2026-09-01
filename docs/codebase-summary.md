@@ -356,6 +356,37 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-02 — Navigation queue (UIFramework Phase 1b, pending release as v2.1.0)
+
+Third phase of the Melvor-patterns sprint. Where Phase 1a made refusal *visible*, this makes it
+*avoidable* for callers that cannot wait. `GameLifecycleManager` gains three fire-and-forget
+methods — `EnqueueStateChange<T>`, `EnqueueRestart`, `EnqueueSceneLoad<TNext>` — that run now if
+idle and otherwise after the in-flight transition finishes, instead of being refused.
+
+Purely additive: the four existing awaitable entry points are behaviourally unchanged, so nothing
+in TheEnd needs to migrate. New `Runtime/Core/Lifecycle/NavigationRequestQueue.cs` (single-consumer
+FIFO, main-thread only, GLM-only — the navigator is deliberately not a participant, since GLM calls
+into it). `GameLifecycleManager` also became `IDisposable` so scope teardown drops queued requests
+and cancels the one in flight.
+
+Two things drove the design and are documented at length in the vault note, because both are easy
+to "fix" into breakage:
+
+- **The `Enqueue*` methods return `void` deliberately.** A queued request runs after the current
+  one, so a caller running *inside* the current one (a state's `OnEnterAsync`, a view's
+  `OnHideAsync`) would block the drain forever if it could await its own request. That hazard
+  cannot be detected — UniTask does not flow `ExecutionContext` — and every flag wide enough to
+  catch it also rejects nearly everything. Returning `void` makes it inexpressible.
+- **The drain waits for idle before invoking each item.** The entry points keep their own guards,
+  so a queue without that wait drains straight into rejections while looking like it works. The
+  idle predicate covers GLM's flag, `UINavigator.IsTransitioning`, and a `_hasStarted` boot gate.
+
+Not shipped: `NavigationResult.Cancelled`, which the sprint plan had slated for this phase. With a
+void API there is no result channel, so it would be unobservable; deferred.
+
+20 new PlayMode tests. Suites green at **276 EditMode / 232 PlayMode** against the local package.
+Plan and three review rounds: `plans/260902-phase1b-navigation-queue/plan.md`.
+
 ### 2026-09-02 — Navigation reports refusal (UIFramework v2.0.0, Phase 1a)
 
 Second phase of the Melvor-patterns sprint. Every guarded navigation entry point now returns
