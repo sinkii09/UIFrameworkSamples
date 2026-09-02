@@ -356,6 +356,39 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-02 — Notification / toast service (UIFramework v2.2.0, Phase 4)
+
+Fourth phase of the Melvor-patterns sprint. The framework had no toast system; it now has
+`INotificationService` with identity-keyed merging (repeated events edit one row's quantity instead
+of stacking), priority ordering, and a resident scene-owned host on a new `UILayer.Notification`
+between `Tooltip` and `Overlay`. Built in the `TooltipService` shape, so toasts never enter the
+navigation stack.
+
+Additive — no existing signature changed — but **one manual step is required in this project**:
+`UIRootLayerRefs` serialises by field name, so TheEnd's existing UIRoot deserialises `Notification`
+as null. **Run `Tools/UIFramework/Upgrade UIRoot Layers` once.** Until then the service falls back
+to the Overlay layer and logs one error naming the command; toasts work but draw over the loading
+curtain. Note the upgrader skips prefab variants and only scans open scenes.
+
+`UILayer` also gained explicit spaced values (`HUD = 0 … Debug = 400`) so future inserts never
+renumber — previously every insert was a silent renumber, safe only because no `UILayer` value is
+ever serialized (re-audited across both repos before the change).
+
+Design points worth knowing before touching it, all documented at length in the vault note:
+- **Visibility is sticky.** Once a toast is on screen it holds its slot until it expires or is
+  dismissed; an arrival never displaces it at any priority. Priority orders the *waiting* set.
+- **The dismiss timer runs only while visible** and pauses behind the loading curtain — but not on
+  the Overlay fallback, where the toast is plainly visible over it.
+- **`MaxLifetime` never pauses and is never reset by a merge.** It is the guarantee an entry
+  terminates; pausing it would let an overlay that never hides make every entry immortal.
+- **No async anywhere.** Fades are a synchronous per-slot state machine advanced in `Tick`, which
+  makes the cancelled-tail hazard (a superseded hide stranding an invisible toast in a live slot)
+  inexpressible rather than merely guarded against.
+
+27 new PlayMode tests. Suites green against the published tag: **276 EditMode / 259 PlayMode**.
+Plan and three review rounds: `plans/260902-phase4-notification-service/plan.md`.
+
+
 ### 2026-09-02 — Navigation queue (UIFramework Phase 1b, pending release as v2.1.0)
 
 Third phase of the Melvor-patterns sprint. Where Phase 1a made refusal *visible*, this makes it

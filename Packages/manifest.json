@@ -20,7 +20,7 @@
     "com.esotericsoftware.spine.spine-unity": "https://github.com/EsotericSoftware/spine-runtimes.git?path=spine-unity/Assets/Spine#4.3",
     "com.github-glitchenzo.nugetforunity": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
     "com.ivanmurzak.unity.mcp": "0.90.0",
-    "com.sinkii09.uiframework": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v2.1.0",
+    "com.sinkii09.uiframework": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v2.2.0",
     "com.unity.2d.animation": "14.0.3",
     "com.unity.2d.aseprite": "4.0.1",
     "com.unity.2d.psdimporter": "13.0.2",
