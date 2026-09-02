@@ -356,6 +356,40 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-02 — Coalesced bindings + render suspend (UIFramework v3.0.0, Phases 2 & 3)
+
+Phases 2 and 3 of the Melvor-patterns sprint, released together as the **breaking** `v3.0.0`.
+TheEnd repinned to `#v3.0.0` and verified against the published tag: **EditMode 276, PlayMode 300**.
+
+**What changed for this project.** UI writes now coalesce to one per rendered frame. Of TheEnd's 28
+binding call sites, **21 change timing** — 20 `BindToText` plus 1 `BindToFillAmount`, all pure
+display. The other 7 (`BindToActive` ×3, `BindToInteractable` ×2, `BindTwoWay` ×2) stay immediate by
+default. No call site needed editing; the new `UIBindMode` parameter is optional and last.
+
+The rule behind the defaults: **display paths coalesce, input paths do not.** A coalesced write
+lands up to a frame late — invisible on a score label, a correctness bug on anything gating
+interaction. A late `SetActive(false)` leaves an object raycastable for the rest of the frame; a
+late `interactable = false` leaves a button clickable; and `BindTwoWay`'s `text != v` guard
+evaluated at flush time would overwrite text the user typed that frame and move their caret.
+
+The **first** value of every binding still applies synchronously, so views built through the async
+loader path never flash unbound state.
+
+`IUIRenderScheduler.Suspend()` also ships (refcounted, `IDisposable`-scoped) but is **EXPERIMENTAL
+and unused here** — TheEnd has no offline-catch-up loop. The framework deliberately never calls it
+itself: the scene load runs inside `LoadingState` while that state's view is on screen, and the
+transition curtain may be `NullTransitionOverlay` or semi-transparent, so it cannot know suspending
+is safe.
+
+**Migration risk to watch in this project:** set-then-read layout. Reading `preferredWidth`, or
+driving `LayoutRebuilder` / a content-size fitter immediately after a bound write, now sees stale
+geometry — pass `UIBindMode.Immediate` at those sites. Nothing in TheEnd currently does this.
+
+**Framework-side note worth carrying:** R3 1.3.1's `ThrottleFirstLastFrame` is defective — once a
+window has emitted a trailing value, a lone value in the next window emits correctly *and* the
+trailing edge fires again carrying `default(T)`. In a binding that is a score label flashing "0".
+`ThrottleLastFrame` is clean. Do not "simplify" the coalescing operator into it.
+
 ### 2026-09-02 — Notification / toast service (UIFramework v2.2.0, Phase 4)
 
 Fourth phase of the Melvor-patterns sprint. The framework had no toast system; it now has
