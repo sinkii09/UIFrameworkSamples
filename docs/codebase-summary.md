@@ -356,6 +356,50 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-19 — Repository tidy
+
+Working tree had accumulated **104 uncommitted changes** across several sessions, which made
+`git status` unreadable. Everything real was committed and the scratch content removed.
+
+**Removed from disk** (all were untracked, all verified unreferenced by any tracked file, and all
+recoverable from their original source):
+
+| Removed | Size | Recoverable from |
+|---|---|---|
+| `Assets/SpinePilotTest/` | 14 MB | `e:/Hoc_2025/Shit things/spine-upgrade/work-4.2\|4.3/` |
+| `Assets/UIFramework/Samples/{1001,10001}/` | 6 MB | Phoenix In The Sky dump, `.../Res/actor/` |
+| `Assets/UIFramework/Samples/shader/` | 435 KB | `e:/Hoc_2025/Than khuc/ncqwc/client/engine/Assets/Resources/shader/` |
+| `Assets/_Phase6Verify/` | 7 KB | leftover Phase 6 QA scaffold — regenerable |
+| `package.json` (repo root) | 0 bytes | empty file, no content |
+
+`Assets/` went 620 MB → 601 MB. The three hand-written Canvas shaders at the root of
+`Assets/UIFramework/Samples/` (animated glow, border trace frame, energy core orb) were kept and
+are now tracked.
+
+**Committed**: the MemoryGame state-routing fix (see below), the `Assets/Test2/` scratch removal
+(65 files), relocation of the volume profile / input actions / URP global settings into
+`Assets/Settings/` (GUIDs preserved, so git recorded them as pure renames with zero content
+change), the MCP plugin binary refresh, project/editor settings churn, and the shaders + Recycler
+View sample. `.mcp.json` is now gitignored — its relay URL carries a per-install path token.
+
+**Behaviour change in this batch**: `MainMenuViewModel` and `WinViewModel` now take a
+`GameLifecycleManager` dependency and transition through it.
+`IUINavigator.ChangeStateAsync` was removed in UIFramework v1.2.0, so this was required to
+compile. Both keep `IUINavigator` for view-level navigation.
+
+Verified after the deletion: **EditMode 345/345**, identical to the pre-tidy baseline.
+
+Known follow-ups raised by review of the ViewModel change, all pre-existing and deliberately left
+alone (a navigation refactor does not belong in a tidy):
+
+- `WinViewModel.OnMainMenuAsync` still hand-rolls a transition outside `GameLifecycleManager`.
+  Not fixable as-is — no `MainMenuState` exists.
+- Button handlers `.Forget()` the `NavigationResult`, so a refused transition is a silently dead
+  button in a player build. The framework ships `EnqueueStateChange`/`EnqueueRestart` for this.
+- `MainMenuViewModel.RequestPlay` has no reentrancy guard; `WinViewModel.OnPlayAgain` does.
+- `SampleLifetimeScope` is dead — referenced by no tracked scene or prefab, and registers neither
+  `IUINavigator` nor `GameLifecycleManager`.
+
 ### 2026-09-19 — Prefab → View binding codegen (UIFramework v3.1.0, Phase 6 — sprint complete)
 
 Last of the 7 Melvor-patterns phases. Editor-only and additive, so `v3.1.0`.
