@@ -356,6 +356,51 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-19 — Prefab → View binding codegen (UIFramework v3.1.0, Phase 6 — sprint complete)
+
+Last of the 7 Melvor-patterns phases. Editor-only and additive, so `v3.1.0`.
+
+**What it does.** `Tools/UIFramework/Create View + ViewModel` gained a second section: point it at a
+prefab, tick the `(child, component)` pairs you want, and it writes `{View}.Bindings.g.cs` — a
+regenerable partial containing only the `[SerializeField]` declarations. `{View}.cs` is never
+touched. It declares fields; assigning them in the Inspector is still manual by design.
+
+**What changed for this project.** Nothing at runtime — no `Runtime/` file was touched, and no
+TheEnd code needed editing. To use the generator on an existing view, add `partial` to its class
+declaration (a one-word edit the tool refuses to make for you). Views created by the wizard from now
+on are `partial` already.
+
+**Two CRITICALs were caught in diff review, after the code compiled clean and the whole suite
+passed.** Both broke the feature's primary workflow and both reproduced empirically:
+
+- The hand-file collision guard matched the bare field name *anywhere* in `{View}.cs`. Since the
+  point of the feature is that `{View}.cs` uses those fields, every run after the first refused,
+  blaming hand-written fields that did not exist. Now matches a declaration shape, after blanking
+  comments and string literals.
+- Field names were allocated first-come in traversal order, so inserting a child ahead of an existing
+  one moved `_label` onto a different GameObject. Unity serialises by field name, so the old
+  reference stayed **non-null** while pointing at the wrong child — invisible to the v1.9.0
+  unassigned-reference validator. The manifest header is now the naming authority, passed into the
+  scan; previously emitted names are reserved before any new allocation.
+
+A second review round then caught a hole **introduced by the fix** for the second CRITICAL: pinning a
+name bypassed the uniqueness set, and prefab paths are built from names, which siblings may share —
+so two same-named, same-typed children both received the pinned name and the generated file emitted
+two identical fields (CS0102). A pin is now claimed once, `Generate` re-checks uniqueness, and a
+mutation check confirmed the new test fails without the guard.
+
+Plus 3 WARNINGs and 5 suggestions fixed: unguarded `File.*` throwing past the error channel, a silent
+GUID mismatch, `ExtractNamespace` taking the file's first namespace instead of the class's, a marker
+matched by equality (a future `v2` could not overwrite its own `v1` output), a second pair-key built
+with a raw `"|"`, C# keywords accepted as class names, and an LF assertion that was trivially true on
+Linux.
+
+**Verification.** EditMode **345/345** (up from 325; +20 regression tests, pinning both CRITICALs and
+the follow-up hole), PlayMode **300/300**. Manual QA against a real TheEnd view prefab in a scratch sandbox
+since removed: regeneration with usages succeeds, byte-identical on re-run, zero name drift after an
+insert, renaming a leaf changes exactly one binding, and all 8 generated fields appear in the
+Inspector with an assignment surviving save/reload.
+
 ### 2026-09-02 — Coalesced bindings + render suspend (UIFramework v3.0.0, Phases 2 & 3)
 
 Phases 2 and 3 of the Melvor-patterns sprint, released together as the **breaking** `v3.0.0`.
