@@ -125,6 +125,7 @@
   <Project Path="DOTweenPro.EditorScripts.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="com.IvanMurzak.Unity.MCP.TestFiles.csproj" />
+  <Project Path="Spikes.WebGlPersistenceProbe.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
   <Project Path="com.IvanMurzak.Unity.MCP.DependencyResolver.csproj" />
   <Project Path="Sinkii09.UIFramework.Editor.Tools.csproj" />
@@ -159,6 +160,7 @@
   <Project Path="Unity.InternalAPIEngineBridge.001.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.Services.Core.Environments.Internal.csproj" />
+  <Project Path="Spikes.WebGlPersistenceProbe.Editor.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Coffee.UIParticle.Editor.csproj" />
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />

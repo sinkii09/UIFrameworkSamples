@@ -1,0 +1,19 @@
+{
+    "name": "Spikes.WebGlPersistenceProbe",
+    "rootNamespace": "Spikes.WebGlPersistenceProbe",
+    "references": [
+        "UniTask",
+        "Sinkii09.UIFramework",
+        "R3.Unity",
+        "VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
