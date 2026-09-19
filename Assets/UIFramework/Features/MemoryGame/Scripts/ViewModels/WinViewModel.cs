@@ -8,6 +8,7 @@ namespace MemoryGame
     public class WinViewModel : ViewModelBase, IViewModel<WinArgs>
     {
         private readonly IUINavigator _navigator;
+        private readonly GameLifecycleManager _lifecycle;
         private readonly ISoundService _sound;
         private readonly SoundConfig _soundConfig;
 
@@ -15,9 +16,10 @@ namespace MemoryGame
         public ReactiveProperty<string> TimeText { get; } = new();
 
         [Inject]
-        public WinViewModel(IUINavigator navigator, ISoundService sound, SoundConfig soundConfig)
+        public WinViewModel(IUINavigator navigator, GameLifecycleManager lifecycle, ISoundService sound, SoundConfig soundConfig)
         {
             _navigator = navigator;
+            _lifecycle = lifecycle;
             _sound = sound;
             _soundConfig = soundConfig;
         }
@@ -34,7 +36,11 @@ namespace MemoryGame
         {
             _sound.PlaySFX(_soundConfig.ButtonClickClip);
             if (_navigator.IsTransitioning) return;
-            _navigator.ChangeStateAsync<MemoryGameState>().Forget();
+            // Same-state re-entry: the current state already IS MemoryGameState, so this must use
+            // RestartCurrentStateAsync (exit -> enter same state) rather than ChangeStateAsync,
+            // which would hit the state machine's same-state guard and silently no-op.
+            // IUINavigator.ChangeStateAsync was removed in UIFramework v1.2.0.
+            _lifecycle.RestartCurrentStateAsync().Forget();
         }
 
         public void OnMainMenu()
