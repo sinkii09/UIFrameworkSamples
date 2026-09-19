@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using ColorStackSort.Logic;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
 using R3;
 using Sinkii09.UIFramework;
 using UnityEngine;
@@ -102,14 +103,37 @@ namespace ColorStackSort
                                "session, so the newer save is left intact.");
                 SetLevel(DifficultyCurve.FirstLevel);
             }
-            catch (Exception ex)
+            catch (SaveMigrationException ex)
             {
-                // Corrupt beyond backup recovery. Start over but keep saving enabled, so the next
-                // level-up repairs the file rather than leaving it broken forever.
-                Debug.LogError($"[LevelProgressService] Could not read saved progress, starting from " +
-                               $"level {DifficultyCurve.FirstLevel}: {ex}");
+                // A migration chain failed, which means the CODE is wrong — the save itself is intact
+                // and untouched. Fail closed for the same reason as above: re-enabling saving here
+                // would let the next Advance() overwrite perfectly good progress with a fresh start,
+                // turning a fixable code defect into permanent data loss.
+                Debug.LogError($"[LevelProgressService] {ex} Progress will NOT be saved this session; " +
+                               "fix the migration and the existing save will load normally.");
+                SetLevel(DifficultyCurve.FirstLevel);
+            }
+            catch (JsonException ex)
+            {
+                // Genuinely damaged data, past what backup recovery could rescue. This is the ONE
+                // case that earns a fresh start with saving left ON, so the next level-up repairs the
+                // file instead of leaving it broken forever.
+                Debug.LogError($"[LevelProgressService] Saved progress is corrupt, starting from " +
+                               $"level {DifficultyCurve.FirstLevel} and allowing it to be repaired: {ex}");
                 SetLevel(DifficultyCurve.FirstLevel);
                 _savingDisabled = false;
+            }
+            catch (Exception ex)
+            {
+                // Anything else — most importantly a STORAGE failure. JsonSaveService.LoadAsync reads
+                // the backend OUTSIDE its try block, so a transient IO or IndexedDB error propagates
+                // raw and lands here. Treating that as corruption would be a disaster: the data is
+                // fine, we simply could not read it, and re-enabling saving would overwrite intact
+                // progress on the next level-up. Fail closed and let the next session try again.
+                Debug.LogError($"[LevelProgressService] Could not read saved progress (storage failure, " +
+                               $"not corruption). Progress will NOT be saved this session so the existing " +
+                               $"save is left intact: {ex}");
+                SetLevel(DifficultyCurve.FirstLevel);
             }
         }
 

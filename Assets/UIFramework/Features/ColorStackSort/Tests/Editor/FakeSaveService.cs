@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
 using R3;
 using Sinkii09.UIFramework;
 
@@ -23,10 +25,27 @@ namespace ColorStackSort.Tests
             /// <summary>No file yet — the service's only null-returning path.</summary>
             Missing,
             ReturnsStored,
-            /// <summary>Present but unreadable, past backup recovery.</summary>
+            /// <summary>
+            /// Present but unreadable, past backup recovery. Surfaces as a <see cref="JsonException"/>,
+            /// which is what the real service actually rethrows: SaveEnvelopeCodec throws JsonException
+            /// for every shape failure, Newtonsoft's own parse errors derive from it, and LoadAsync
+            /// rethrows that primary exception once backup recovery has also failed. The framework
+            /// pins this in SaveServiceSchemaVersionTests.LoadAsync_CorruptPrimaryAndNewerSchemaBackup_
+            /// ThrowsPrimaryError. This used to be an InvalidOperationException, which made the fake
+            /// unable to distinguish corruption from a storage failure — the very distinction the
+            /// consumer now depends on.
+            /// </summary>
             Corrupt,
             /// <summary>Written by a newer build. Must never be overwritten.</summary>
-            NewerSchema
+            NewerSchema,
+            /// <summary>
+            /// The backend could not be read at all — transient IO, or IndexedDB on WebGL. The data is
+            /// intact, we simply could not reach it. JsonSaveService.LoadAsync reads the backend
+            /// OUTSIDE its try block, so this propagates raw to the consumer.
+            /// </summary>
+            StorageFailure,
+            /// <summary>A migration chain failed: a code defect, with the save left untouched.</summary>
+            MigrationFailure
         }
 
         internal LoadBehaviour Behaviour = LoadBehaviour.Missing;
@@ -83,7 +102,15 @@ namespace ColorStackSort.Tests
             {
                 case LoadBehaviour.Corrupt:
                     return UniTask.FromException<T>(
-                        new InvalidOperationException("save file is malformed (simulated)"));
+                        new JsonReaderException("save file is malformed (simulated)"));
+
+                case LoadBehaviour.StorageFailure:
+                    return UniTask.FromException<T>(
+                        new IOException("backend unreachable (simulated)"));
+
+                case LoadBehaviour.MigrationFailure:
+                    return UniTask.FromException<T>(
+                        new SaveMigrationException(key, 1, 2, "the v1 step threw (simulated)."));
 
                 case LoadBehaviour.NewerSchema:
                     return UniTask.FromException<T>(new SaveSchemaVersionException(key, 99, 1));

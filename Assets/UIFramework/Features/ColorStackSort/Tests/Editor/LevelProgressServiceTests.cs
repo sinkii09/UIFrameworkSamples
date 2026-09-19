@@ -94,6 +94,42 @@ namespace ColorStackSort.Tests
         }
 
         [Test]
+        public void Load_WithStorageFailure_NeverWritesOverTheIntactSave()
+        {
+            // The distinction that matters: a backend that cannot be READ is not a corrupt save. The
+            // data is fine and still on disk; we just could not reach it — transient IO, or IndexedDB
+            // on WebGL. Re-enabling saving here would overwrite intact progress with a fresh start on
+            // the next level-up, which is the same permanent loss the newer-schema rule exists to stop.
+            //
+            // This path is reachable because JsonSaveService.LoadAsync reads the backend OUTSIDE its
+            // try block, so a storage exception propagates raw rather than being classified.
+            _saves.Behaviour = FakeSaveService.LoadBehaviour.StorageFailure;
+            LogAssert.ignoreFailingMessages = true;
+            Load();
+
+            _service.Advance();
+            _service.Advance();
+
+            Assert.AreEqual(DifficultyCurve.FirstLevel + 2, _service.Current, "play continues");
+            Assert.AreEqual(0, _saves.SaveCallCount, "but the unreadable save must be left alone");
+        }
+
+        [Test]
+        public void Load_WithFailedMigration_NeverWritesOverTheIntactSave()
+        {
+            // A failed migration means the CODE is wrong, not the data — the framework leaves the file
+            // untouched and refuses to fall back to the backup for exactly this reason. Overwriting
+            // would turn a fixable defect into permanent loss.
+            _saves.Behaviour = FakeSaveService.LoadBehaviour.MigrationFailure;
+            LogAssert.ignoreFailingMessages = true;
+            Load();
+
+            _service.Advance();
+
+            Assert.AreEqual(0, _saves.SaveCallCount);
+        }
+
+        [Test]
         public void Advance_BeforeLoad_DoesNotWrite()
         {
             // Fail-closed. Nothing has been read yet, so nothing has earned the right to be

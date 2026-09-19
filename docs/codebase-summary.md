@@ -356,6 +356,46 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ## Recent Changes
 
+### 2026-09-19 — Persistence redesign (UIFramework v3.2.0), verified on WebGL
+
+Prerequisite sprint for GildedLedger: the save system did not work on WebGL at all. Six phases,
+shipped as framework **v3.2.0** (additive — no interface member added, no consumer breaks).
+
+**Root cause:** `UniTask.RunOnThreadPool` **hangs on WebGL with no exception** (`webGLThreadsSupport: 0`).
+A spike proved `File.*` including `File.Replace` work fine on IDBFS, which inverted the plan: the fix
+is to **de-thread** `LocalFileStorageBackend`'s six I/O sites, not to write a second backend. The
+planned WebGL backend, the `.jslib` over `FS.syncfs`, the `RegisterPersistence` DI hook and the
+autosave scheduler were all **cut** — saves are already write-through, and VContainer's last-wins
+registration already allows a game to override the backend.
+
+Dispatch is a **runtime** `Application.platform` check, never `#if UNITY_WEBGL`: a compile-time
+branch is not compiled during Editor test runs, so "both paths tested" would have been a silent lie.
+
+**Added to the framework:** per-key save migration chains (`SaveMigrationRegistry`, `ISaveMigration`,
+`SaveMigrationException`), save slots (`ISaveSlotContext`, `SaveKeyResolver`), and repair-on-recover
+(`SaveBackupRecovery`, `OnSaveRecoveredAsObservable`). Schema version is **derived from the chain**,
+never declared, so a version disagreeing with its steps is unrepresentable.
+
+**Changed in this repo:**
+- `ColorStackSort/LevelProgressService` — catch chain now distinguishes five cases. A storage failure
+  **fails closed** instead of being read as corruption; only a `JsonException` starts fresh and
+  re-enables saving. Previously `ReadAsync` sat outside the `try`, so a storage failure re-enabled
+  saving and the next `Advance()` overwrote intact progress.
+- `ColorStackSort/Tests/FakeSaveService` — `Corrupt` now throws `JsonReaderException` (was
+  `InvalidOperationException`); added `StorageFailure` and `MigrationFailure`. The fake could not
+  express a distinction the consumer now depends on.
+- `Assets/_Spikes/WebGlPersistenceProbe/` — the measurement harness. Every probe races a watchdog
+  because the WebGL failure mode is a hang with **no exception**; a probe that only caught exceptions
+  would sit there looking like it was still working.
+
+**Verified on a real WebGL build** (Chromium 153, full browser close between runs): `Saves/`
+subdirectory creation on IDBFS **OK**; a save written by a previous browser session **read back
+OK**; slot isolation **OK** — all while the raw `UniTask.RunOnThreadPool` probe still reported
+`HUNG` in the same page load. That also clears IL2CPP managed stripping of Newtonsoft, which no
+Editor test can reach.
+
+**Tests:** EditMode 347/347, PlayMode 352/352.
+
 ### 2026-09-19 — Repository tidy
 
 Working tree had accumulated **104 uncommitted changes** across several sessions, which made
