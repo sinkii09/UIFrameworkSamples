@@ -125,3 +125,11 @@ claudekit/
 
 # Unity MCP bridge endpoint — the relay URL and its path token are per-machine
 .mcp.json
+
+# tools/ holds hand-written dotnet projects built OUTSIDE Unity, so the blanket
+# *.csproj rule above (which exists because Unity regenerates its own project
+# files) must not swallow them — without this negation the committed sim runner
+# silently never gets committed.
+!tools/**/*.csproj
+tools/**/bin/
+tools/**/obj/
