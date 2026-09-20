@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Runs the Unity EditMode tests OUTSIDE Unity. Same .cs files, same NUnit attributes — Unity
+    supplies NUnit through UnityEngine.TestRunner, this project supplies it through NuGet.
+
+    Without this the test assembly would only ever be compiled by an Editor that this machine cannot
+    currently launch, which is how a suite ends up green in principle and unbuilt in practice.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>AstralChorus.Tests</AssemblyName>
+    <RootNamespace>AstralChorus.Tests</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/UIFramework/Features/AstralChorus/Tests/Editor/**/*.cs" />
+    <ProjectReference Include="../AstralChorus.Logic/AstralChorus.Logic.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>

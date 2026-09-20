@@ -109,6 +109,7 @@
   <Project Path="Unity.PathTracing.Runtime.csproj" />
   <Project Path="Unity.Services.Core.Telemetry.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
+  <Project Path="UIFramework.AstralChorus.Logic.csproj" />
   <Project Path="Unity.VisualScripting.Shared.Editor.csproj" />
   <Project Path="Unity.AppUI.Redux.Editor.csproj" />
   <Project Path="Unity.Profiling.Core.csproj" />
@@ -133,6 +134,7 @@
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.PathTracing.Editor.csproj" />
+  <Project Path="UIFramework.AstralChorus.Tests.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Services.Core.Device.csproj" />

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles the Unity assembly's sources OUTSIDE Unity.
+
+    TargetFramework is netstandard2.1 on purpose, not net10.0: it is what Unity 6 actually gives us,
+    so `record`, `init` accessors and System.HashCode fail to compile HERE, in seconds, instead of
+    the next time somebody opens the Editor. A net10.0 project would accept all three and the
+    constraint would be enforced by nothing but memory.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>AstralChorus.Logic</AssemblyName>
+    <RootNamespace>AstralChorus.Logic</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../../Assets/UIFramework/Features/AstralChorus/Scripts/Logic/**/*.cs" />
+  </ItemGroup>
+
+</Project>
