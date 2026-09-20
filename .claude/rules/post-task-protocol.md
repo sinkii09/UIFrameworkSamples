@@ -27,16 +27,26 @@ Common triggers:
 
 ---
 
-## Step 2 — Update Codebase Summary (`docs/codebase-summary.md`)
+## Step 2 — Update the docs (two files, split 2026-09-20)
+
+`docs/codebase-summary.md` is **the current state**; `docs/changelog-summary.md` is **the history**.
+They were one file until it reached 1,867 lines against the 800-line cap with 78% of it being log,
+which buried the part a new session actually needs.
 
 After any change that affects the project's observable state:
 
-- **New feature added** → add to relevant component section
-- **Bug fixed** → update "Recent Changes" section with: what broke, root cause, fix
-- **File/class added or removed** → update folder structure
-- **Architecture changed** → update architecture description
+| Change | Goes in |
+|---|---|
+| New feature added | **summary** — the relevant component section |
+| File/class added or removed | **summary** — the folder structure |
+| Architecture changed | **summary** — the architecture description |
+| Bug fixed | **changelog** — what broke, root cause, fix |
+| Anything worth a dated entry | **changelog**, newest first |
 
-Keep `docs/codebase-summary.md` as the single source of truth for "what is this project and what does it currently contain." A new session reading only this file should understand the full current state.
+A new session reading only `codebase-summary.md` should understand the full current state **without**
+reading the changelog. If an entry only makes sense as history, it belongs in the changelog; if it
+changes what the project *is*, the summary has to say so in its own words rather than link to a log
+entry. Keep the summary under the 800-line cap — when it drifts over, split again rather than trim.
 
 ---
 
@@ -53,12 +63,12 @@ Skip for routine bug fixes that don't affect milestone status.
 
 ## Scope by task size
 
-| Task type | Memory | Codebase Summary | Roadmap |
-|-----------|--------|-----------------|---------|
-| New feature / system | ✓ if non-obvious | ✓ always | ✓ if milestone changed |
-| Bug fix | ✓ if root cause surprising | ✓ update Recent Changes | ✗ |
-| Trivial fix (typo, text) | ✗ | ✗ | ✗ |
-| Refactor (no behavior change) | ✓ if pattern changes | ✓ if structure changed | ✗ |
+| Task type | Memory | Codebase Summary | Changelog | Roadmap |
+|-----------|--------|-----------------|-----------|---------|
+| New feature / system | ✓ if non-obvious | ✓ always | ✓ always | ✓ if milestone changed |
+| Bug fix | ✓ if root cause surprising | ✗ unless it changed the shape | ✓ always | ✗ |
+| Trivial fix (typo, text) | ✗ | ✗ | ✗ | ✗ |
+| Refactor (no behavior change) | ✓ if pattern changes | ✓ if structure changed | ✓ always | ✗ |
 
 ---
 
