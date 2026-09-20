@@ -429,8 +429,9 @@ live **inside** its own pack (a shared `Resources/` folder pulls every pack's de
 regardless of the profile, defeating the mechanism), and `IContentAssetLoader` is async (a synchronous
 signature is only honest under Resources).
 
-**Not verified: the 58 tests have never run.** The Unity MCP bridge refused connections for the whole
-session, so the work was compile-checked with the dotnet harness instead. Compiling is not passing.
+**Verified: EditMode 471/471.** That is 413 before the sprint plus exactly the 58 new tests — the
+matching arithmetic is what proves they were discovered and executed rather than silently skipped, and
+the 413 existing tests still pass, so nothing regressed.
 
 ### 2026-09-20 — UIFramework pinned to v3.3.0 (the data foundation)
 
