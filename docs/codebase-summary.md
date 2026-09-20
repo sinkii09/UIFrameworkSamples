@@ -354,7 +354,266 @@ Tests/Editor/               UIFramework.ColorStackSort.Tests.asmdef  (EditMode)
 
 ---
 
+## AstralChorus (`docs/astral-chorus-gdd.md`) — design only, no code
+
+Offline waifu-collection turn-based RPG. **GDD complete 2026-09-19; zero code exists.**
+
+- **Design docs:** [`docs/astral-chorus-gdd.md`](astral-chorus-gdd.md) (425 L) and
+  [`docs/astral-chorus-content-architecture.md`](astral-chorus-content-architecture.md) (386 L).
+  Written in Vietnamese prose with English API/system names. **These two are canonical.**
+- **Illustrated read-only companion:** [`docs/astral-chorus-gdd.html`](astral-chorus-gdd.html) — a
+  standalone page (no build step, no network except Google Fonts) with SVG diagrams for the core
+  loop, element cycle, Aria triangle, Chorus formation and the UI layer collision, plus charts for
+  the pull distribution and the Echo Fragment conversion chain. It duplicates content from the two
+  markdown files, so **it goes stale unless edited alongside them** — when they disagree, markdown
+  wins. Also published as an Artifact at https://claude.ai/artifact/LHWVjYqdEqa6YrEQ87wngc (private
+  unless shared); republishing that URL and editing this file are two separate actions.
+- **Shape:** fully offline (no server, no IAP), mobile portrait 1080x1920, 14 characters across 3
+  rarity tiers, one turn-based engine with a swappable resource layer. Three battle **formats**, a
+  closed set owned by core: **Aria** (1v1, Momentum), **Gauntlet** (Bo3 — three Aria rounds, HP
+  carries, Momentum resets, swap between rounds), **Chorus** (3v3, Link gauge + front/back).
+  Chapter story with dialogue scenes.
+- **Format vs Mode** is the axis of the modular design: a *format* is how one battle resolves (core,
+  closed); a *mode* is what a run of battles means (pack, open). Phase 1 modes are offline
+  translations of the usual gacha menu — The Ascent (tower), Standing Colossus (world boss), Echo
+  Duel (arena). Guild war and PvP are cut: they need other players, not a server.
+- **Central design rule:** gacha is a *reward schedule*, not an economy. Pull currency is finite and
+  authored; the farmable currency must never convert into it.
+- **Content packs:** a pack is a folder + one `ContentPackManifest` SO, data-only, no asmdef. Core
+  never names a pack; everything resolves through `packId:entityId` string IDs. Build-time blocking
+  is logic-layer only (a profile SO holding **IDs, not object references**); byte-stripping via
+  Addressables is deferred to Phase 2.
+- **Known build items the framework does NOT provide:** a multi-column collection grid
+  (`RecyclerView` is single-axis only), a dialogue system, gacha/RNG, currency/inventory, turn-based
+  scaffolding, autosave. Plus: the repo still has **zero character art**.
+- **First task when implementation starts:** a Monte-Carlo economy sim in the engine-free `Logic`
+  assembly. The GDD's economy tables are calculated, not playtested, and review caught two economy
+  defects in the first draft.
+
+**GildedLedger is deprioritized** — its GDD is kept as reference, implementation is not planned.
+
+---
+
 ## Recent Changes
+
+### 2026-09-20 — AstralChorus: economy sim ported to C# (first AstralChorus code in the repo)
+
+The Monte-Carlo economy model now lives in the repo as a Unity assembly instead of a temp-directory
+Python script. GDD risk #7 asked for exactly this: the numbers in §10/§11 must be re-derivable on
+demand, not archaeologically.
+
+**`Assets/UIFramework/Features/AstralChorus/Scripts/Logic/`** — `UIFramework.AstralChorus.Logic.asmdef`,
+`references: []`, `noEngineReferences: true`. Twelve files, none over 130 LOC: `EconomyConfig`
+(every tunable in one place), `DeterministicRandom` (PCG-XSH-RR), `PityState`, `FocusWeighting`,
+`PullEngine`/`PullOutcome`, `ResonanceCascade`/`CascadeResult`, `AnchorTable`, `EconomySimulator`,
+`SimulationReport`, `DustGrindSolver`.
+
+**`Assets/UIFramework/Features/AstralChorus/Tests/Editor/`** — 31 tests across five fixtures. The
+structural-invariant fixture is the load-bearing one: pity gaps, new-character-first, Focus ordering,
+Catalyst-per-conversion and fragment conservation are asserted with no tolerance and no seed
+dependence, because distribution-matching provably cannot catch compensating errors — this design
+already produced one (★5 low, ★4 high, cancelling in the total).
+
+**`tools/astral-chorus-economy-sim/`** — three csproj plus the frozen Python oracle. The logic project
+targets `netstandard2.1` with `LangVersion 9.0` **on purpose**: that is what enforces Unity's C# level,
+and a `net10.0` project would silently accept `record`, `init` and `System.HashCode`. The test project
+compiles and runs the same Editor test files outside Unity, so the suite is not hostage to an Editor
+this machine currently cannot launch (the `ai-game-developer` MCP bridge refuses connections).
+
+Three traps worth knowing, none of them a code defect:
+
+- **`.gitignore` swallowed the fix for the review finding it was fixing.** The oracle was first placed
+  in `plans/`, which this repo ignores wholesale (`plans/**/*`), and `*.csproj` — a Unity rule, since
+  Unity regenerates its own project files — hid the committed runner. Both would have looked done and
+  been absent. Now `!tools/**/*.csproj` and the oracle sits in `tools/`.
+- **Two csproj in one directory share `obj/project.assets.json`** and fail with NETSDK1005.
+- **A zero-failure query is only as sharp as N.** `SmallestBudgetMaxingEveryone` at 8,000 players
+  answered 380 Shard; at 100,000 x 3 seeds, 380 still fails 1 player in 5,500 and only 420 reaches
+  zero. The GDD's 420 is correct; the method now documents the rule-of-three bound so it is not reused
+  to pick a shipping constant.
+
+The port also caught the documents overstating a result: GDD §10 and the architecture doc claimed
+mode-dropped Catalyst makes four shop prices produce "exactly the same" grind. Measured, it is 14.75 /
+14.80 / 14.80 / 14.85 h. Both now state the true and still-damning figure — the price is worth 5.7 h of
+grind without mode drops and 0.1 h with them, a **57x collapse**.
+
+**Diff review found one blocking defect that the green suite could not see.** Unity ships NUnit **3.5**
+(`com.unity.ext.nunit@2.0.5`), and `Assert.Multiple` arrived in 3.6 — so the 15 call sites would have
+raised `CS0117` on first Editor import and taken the whole test assembly down with them. `dotnet test`
+was green because its NuGet NUnit is 3.14. All 15 are gone. The lesson generalises: compiling a test
+assembly outside Unity does not substitute for one Editor import.
+
+**A design ruling came out of the same review.** GDD §9 conditions soft pity's "pays exactly ★4" clause
+on the ★4 roster still being incomplete, and says why — it protects the ★4 ownership floor. The code
+applied it unconditionally. Since new-character-first fills all five ★4 within the first few ★4 hits,
+almost the entire run sits in the regime where the clause no longer applies, so the code and the
+document disagreed about nearly every pull. The document wins: the guaranteed pull now pays ★5 at the
+two rates' relative odds (10%).
+
+That moves mean ★5 hits at 180 pulls from 6.08 to **6.31**, and the share of campaign-only players who
+max no ★5 from 49% to **47%**; both anchor tables and risk 13 were updated. Catalyst demand (25/26 and
+75/76) and the 420-Shard ceiling are untouched — Catalyst is set by the cross-rarity cascade, fed by ★3
+overflow, which soft pity never touches. The frozen oracle keeps the old reading, so `OracleParityTests`
+runs with the flag off and still proves the port faithful.
+
+Also fixed: `AnchorRow` printed rows that did not reconcile where rounding crossed zero (display values
+now derive from the rounded total); an assertion that disabled itself on the one row worth checking;
+`Percentile` using the floor convention rather than nearest-rank, which no published assertion could
+have caught; unvalidated `focusIndex`; and `DustGrindSolver` accepting NaN (which passes `< 0`, then
+`(int)Math.Ceiling(NaN)` is `int.MinValue` and the answer becomes "0 runs"). The Logic asmdef is now
+`includePlatforms: ["Editor"]` + `autoReferenced: false` — a design-time tuning tool was compiling into
+every player build. Suite is 45 tests.
+
+**Verified inside Unity 6000.4.0f1.** `assets-refresh` imported cleanly and generated all 26 `.meta`
+files; the Editor reports no compilation errors and an empty console; `tests-run` on EditMode filtered to
+`UIFramework.AstralChorus.Tests` gives **45 passed / 0 failed / 0 skipped in 29.4 s**. That is the
+positive confirmation the blocking finding needed — the test assembly compiles only because the 15
+`Assert.Multiple` call sites are gone, and Mono handles the 30,000-player fixture without needing a
+reduced N. Unity added both assemblies to the tracked `TheEnd.slnx`.
+
+The MCP bridge refused connections at session start and does not re-register its tools when Unity is
+started later; `unity-mcp-cli run-tool <name> --url <from .mcp.json> --input-file <json>` reaches the
+same tools directly.
+
+Not committed.
+
+### 2026-09-20 — AstralChorus: framework gap audit + economy sim executed
+
+Still no game code. Two deliverables, one deletion.
+
+**`docs/astral-chorus-framework-gaps.md` (new).** Audits `com.sinkii09.uiframework` v3.2.0 against
+everything the GDD and the content-architecture doc require. Every gap carries verifiable evidence
+(file path or grep result). Eight blocking gaps; the two structural ones:
+
+- `IUILoader.LoadAsync<T>(...) where T : Component` **cannot express** loading a ScriptableObject
+  definition, a Sprite portrait, a TextAsset script or an AudioClip. Content packs are *defined* by
+  loading non-Component assets by pack-scoped key — so this is a public-API breaking change that gets
+  more expensive the later it is made.
+- Zero `OnApplicationPause`/`Quit`/`Focus` handling and zero autosave anywhere in Runtime. Combined
+  with `ISaveService` writing the whole JSON file per save, this needs a debounced save scheduler, not
+  just a lifecycle hook.
+
+Turn-based combat and dialogue are listed as blocking but explicitly **out of this package** — a second
+package, so AircraftStriker/ColorStackSort/MemoryGame do not inherit a battle engine they never use.
+`UIFormatUtils.FormatCompact` was checked and is NOT a gap.
+
+**Economy Monte-Carlo executed and applied** (GDD risk #7, "the first task of Phase 1"). Python
+prototype, 30k players, models fragments **per character** rather than per tier. It contradicted the
+GDD's own tables in two places, and both are now fixed:
+
+- `budget / E[cycle]` overstates *5 hits at a finite horizon — 6.08 actual vs 6.5 published. The *4
+  count moves the **other** way (35.70 vs ~34) because a hard-pity *5 also resets the soft-pity
+  counter. The two errors cancel in the total, which is why nobody caught it by eye.
+- Under a flat 5:1 Resonance rate, 100% of players max all 14 characters at **260** Shard while the
+  campaign alone gifts 180 — so the entire Ascent tower was economically worth 80 Shard. The rate is
+  now split: **same-tier 5:1** (the variance eraser, kept cheap), **cross-tier 10:1** (the overflow
+  drain, which was the leak). Ceiling moves to 420, giving the tower 240 Shard of runway.
+
+Constants resolved: `ASCENT_SHARD_PER_FLOOR` = 6, `ASCENT_FLOORS` = 40, Catalyst = 1,200 Dust, Dust
+income = 600/run. Full completion = 444 runs = **22.2 h** (was 44.4 h at the old 300/run). The sim also
+showed the Catalyst *price* is nearly inert — 1,200 -> 900 saves 1.9 h — so it is the wrong knob for
+pacing.
+
+`IModeRewardSink` was reduced to `ReportRunComplete` / `GrantMaterial` / `ReportMilestone`. `GrantCatalyst`
+went first (at 0.25 Catalyst/run from modes, all four price points produce an identical grind — the shop
+stops existing). A review round then found that closing one door had left three others open, all reachable
+by the same resource:
+
+- `MAX_PACK_SHARD` was the only ceiling, so Catalyst walked back in through the milestone door →
+  `MAX_PACK_CATALYST` added.
+- `GrantDust` was still unbounded — and the sim had named the **Dust rate**, not the Catalyst price, as the
+  lever that sets the 22.2 h figure. The fence was guarding the resource the sim exonerated. Modes now
+  report run length; core owns the payout table.
+- The `milestoneId → reward` table was free-form data, so a pack could declare a Fragment reward that the
+  prose forbids. `MilestoneReward` is now a closed struct of `Shard` + `Catalyst` only, which makes a third
+  ceiling unnecessary.
+- Per-pack ceilings cannot defend a global budget (N packs × ceiling), so the loader keeps a running total
+  across all loaded packs; `core` overflowing is a build-time validator failure, since refusing to load core
+  means no game.
+
+Two corrections to the sim write-up itself, both caught by verification rather than by review:
+
+- GDD risk #13 said ~10% of campaign-only players max zero *5. The real figure is **49%** — the 10% came
+  from a percentile of the *total* maxed count rather than of *5 specifically.
+- The same-tier 5:1 conversion rule's stated purpose (erasing within-tier variance) is **false**: it fires
+  in 0.0% of runs, and 100% of players max all *3 and *4 without ever using it, because targeted inflow from
+  the tier below fills deficits 1:1 first. The rule is kept for the job it actually does — letting a player
+  redirect fragments to the character they want, rather than the one that happens to be cheapest.
+
+**Deleted `docs/astral-chorus-gdd.html`** at the user's request. The published artifact still exists.
+
+### 2026-09-20 — AstralChorus: economy pillar reversed, Focus, Gauntlet, gear (design only)
+
+Still no code. Four design changes, all driven by the user reversing or extending earlier decisions.
+
+**The economy pillar was inverted on request.** The GDD was built on "Astral Shard is never farmable".
+The user asked for it to be farmable. Rather than discard the argument, the wall moved: *the authored
+budget alone guarantees owning all 14 characters; farming only accelerates and deepens.* Shard is now
+farmed **by depth, not by time** — first-clear of each Ascent floor pays, re-running a cleared floor pays
+nothing. The safety property survived intact because the real boundary was never "campaign vs mode" but
+**exactly-once vs repeatable**, and a floor's first clear is exactly-once like a chapter's.
+
+Consequence for the architecture: `IModeRewardSink` still has no `GrantShard`. A mode reports
+`ReportMilestone("ascent:floor:042")` and core consults `ClaimedRewardIds` before granting — so replaying
+a floor cannot pay twice, and a pack cannot price its own milestones.
+
+**Focus (rate-up):** designate one character, weight ×3 within its rarity on the current banner. It never
+overrides new-character-first, so it cannot be used to farm duplicates while the roster is incomplete —
+the ownership guarantee is untouched. Its real value is after completion, when it decides which character
+the Fragments flow to.
+
+**Gauntlet (Bo3):** three Aria rounds, HP carries, Momentum resets per round, free swaps, and a first-time
+entrant gets +1 Momentum. That last rule is anti-degeneracy: without it the optimal line is always to
+re-send the winner, and the match collapses into one long Aria with two spectators.
+
+**Gear — designed, not scheduled.** Three slots, rolled substats, level 0→9, set bonuses at 2 and 3 pieces
+with each mode dropping its own sets (which is what finally gives the three modes distinct identities).
+Notably it rescues the "materials" resource that was previously redundant: level-up is now Dust-only and
+materials exist to upgrade gear. Gear is also **the first thing in the design that is generated rather
+than authored**, so templates are pack data while instances are core save state — with a mandatory
+inventory cap, because `ISaveService` writes the save as one whole JSON file and an uncapped list would
+re-serialize on every autosave.
+
+Because the Ascent's Shard yield is left for the simulator, the Fragment economy is now documented as
+**two anchors** (180 pulls campaign-only, 360 illustrative) rather than one false-precision total.
+
+### 2026-09-19 — AstralChorus GDD + content architecture (design only)
+
+Designed a new offline waifu-gacha turn-based game and wrote both design documents. No code.
+
+**Decisions locked with the user:** offline-only with no IAP; gacha as a reward schedule with pity,
+banners unlocking permanently with no rotation; 14 characters over 3 rarity tiers; chapter story with
+dialogue scenes; AI-generated art now and Spine later; one combat engine with a swappable resource
+layer; content blocked at the logic layer only; one save profile but slot-independent design.
+
+**What review caught (three rounds, all fixed):**
+
+- The 180-pull budget did **not** guarantee roster completion — ~25% of players would finish Phase 1
+  missing a ★5 (coupon collector over ~6 hits at 3 characters). Fixed by a *new-character-first*
+  rule: while a rarity is incomplete, a pull of that rarity always yields an unowned character.
+- Echo Fragment supply did not exist. ★5 could only ever open node 1, and the shop sold ★3 Fragments
+  — the one commodity already in surplus. Fixed with 2 Fragments per duplicate plus a **Resonance**
+  rule: 5 Fragments of one rarity (pooled across any characters) + 1 Catalyst yields 1 Fragment of a
+  **chosen** character, same rarity or one above. Pooled-in / targeted-out is what kills the
+  per-character variance — Fragments are stored per character, so a rarity-pool conversion with no
+  named output left roughly half the ★4s short despite a total surplus.
+- The save schema held **no currencies and no exactly-once ledger**. Without `ClaimedRewardIds`,
+  replaying a chapter re-grants its Shards, which collapses the entire "pull currency is not
+  farmable" pillar. Also added: Catalyst count, materials, team loadout, chapter/node position,
+  settings.
+- An `Extra` extension bag was designed and then removed: data-only packs have no code to write it,
+  so only core could — which would force core to know pack-specific fields, violating the
+  architecture's own first principle. Newtonsoft is already additively backward-compatible.
+- Self-inflicted, caught on the third pass: an affinity reward added during the rewrite (3 milestones
+  × 2 Fragments × 14 characters = 84 Fragments) silently made ★5 maxable in Phase 1, contradicting a
+  scope line written a few paragraphs above it. Cut to the final milestone only. A rewrite also
+  dropped the boss-phase section entirely.
+
+**Invariants worth remembering** (also in memory): a pack must never own a save key or register a
+migration, because `SaveMigrationRegistry` *derives* the current version from the chain — removing a
+pack drops the derived version below the version stamped in the file and load fails permanently.
+Pity must live in core and count globally; keyed by banner ID it freezes silently when a pack is
+disabled.
 
 ### 2026-09-19 — Persistence redesign (UIFramework v3.2.0), verified on WebGL
 
