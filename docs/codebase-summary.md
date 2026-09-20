@@ -396,6 +396,28 @@ Offline waifu-collection turn-based RPG. **GDD complete 2026-09-19; zero code ex
 
 ## Recent Changes
 
+### 2026-09-20 — UIFramework pinned to v3.3.0 (the data foundation)
+
+`Packages/manifest.json` moved from `#v3.2.0` to `#v3.3.0`. Five capabilities the game needs and
+did not have, all additive — no member was added to an existing public interface, so nothing in this
+repo had to change to take the bump. Verified after the repin: EditMode 413/413, PlayMode 391/391.
+
+| New | What it unblocks here |
+|---|---|
+| `IAssetLoader` | loading ScriptableObject / Sprite / TextAsset by key — `IUILoader` is a *prefab* loader and could not express it. AstralChorus content packs are defined by exactly this |
+| `IAutoSaveScheduler` + `AppLifecycleSignals` | progress surviving an OS kill. Coalesces marks into one write, flushes synchronously on `OnApplicationPause` |
+| `ISynchronousSaveService` / `ISynchronousStorageBackend` | the pause flush. The async path deadlocks there — `SaveAsync` awaits a semaphore whose holder resumes on a player loop that has stopped |
+| `SaveRecoveryCoordinator` + `ISaveRecoveryPrompt` | a damaged save offers a choice instead of crashing at boot |
+| `INotificationSuspender` | reward toasts no longer render *underneath* the pull animation that raised them (GDD §14: Notification layer 275, Overlay 300) |
+
+Plus `Tools/UIFramework/Create Logic Assembly`, which generates the engine-free `*.Logic` asmdef
+pattern this repo already uses by hand in `UIFramework.AstralChorus.Logic` and
+`UIFramework.ColorStackSort.Logic`.
+
+**Still owed, and no test can supply it:** build to Android, kill the app from recents, reopen, and
+confirm progress survived. `OnApplicationPause` never fires in the Editor, so the autosave flush has
+no automated proof.
+
 ### 2026-09-20 — AstralChorus: economy sim ported to C# (first AstralChorus code in the repo)
 
 The Monte-Carlo economy model now lives in the repo as a Unity assembly instead of a temp-directory
