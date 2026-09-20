@@ -38,8 +38,14 @@ Assets/UIFramework/Features/AstralChorus/
    └─ ember-banner/
 ```
 
-Mỗi pack là **một folder** chứa đúng **một** `ContentPackManifest` (đặt trong `Resources/ContentPacks/`),
-cộng `Definitions/` và `Art/`.
+Mỗi pack là **một folder** chứa đúng **một** `ContentPackManifest`, cộng `Definitions/` và `Art/`.
+
+> **SỬA 2026-09-20 — manifest phải nằm TRONG pack:** `Packs/<packId>/Resources/ContentPacks/<packId>.asset`.
+> Bản đầu đặt nó ở một `Resources/ContentPacks/` dùng chung, **ngoài** `Packs/`. Unity gộp mọi thư mục
+> `Resources/` nên khoá nạp không đổi, nhưng một manifest dùng chung thì `Resources/` kéo manifest và
+> manifest kéo `Entries` ⇒ **definition của MỌI pack vào build bất kể profile bật hay tắt**, tức là
+> vô hiệu hoá chính cơ chế block. Nó cũng làm validator rule 4 báo lỗi chính manifest. Đặt trong pack
+> thì xoá folder pack là bytes biến mất thật.
 
 **Pack data-only KHÔNG có asmdef.** Asmdef mỗi pack nhân số compile unit mà chẳng mua được gì — core vốn đã
 bị cấm tham chiếu type của pack, nên ranh giới assembly không bảo vệ thêm gì. Nó chỉ mua được một chỗ móc
@@ -73,7 +79,12 @@ Nếu để nó vào profile thì một lỗi đánh máy trong profile có th�
 
 ## 2. Định danh & phân giải
 
-ID dạng **`packId:entityId`**, validate `^[a-z0-9_-]+:[a-z0-9_-]+$`.
+ID dạng **`packId:entityId`**, validate `^[a-z0-9_-]+(:[a-z0-9_-]+)+$`, tách ở dấu `:` **đầu tiên**.
+
+> **SỬA 2026-09-20:** regex cũ là `^[a-z0-9_-]+:[a-z0-9_-]+$` — hai đoạn — trong khi chính tài liệu này
+> gọi `"ascent:floor:042"` là hợp lệ ở §7. Hai câu đó không thể cùng đúng. Luật nới được chọn để **một**
+> validator phủ cả content id lẫn milestone id. Giá phải trả: `"a:b:c"` viết nhầm từ `"a:b"` không bị bắt.
+> Cài bằng vòng lặp ký tự chứ không phải `Regex` (không cấp phát, không caveat IL2CPP, `IsValid(null)` không ném).
 
 `string` thuần ở cả save lẫn registry. **Không GUID** — prefab GUID ở repo này hay churn
 (`AircraftStrikerSetupWizard` xoá-rồi-tạo-lại prefab làm đổi GUID, phá binding Addressables). **Không enum**
@@ -157,9 +168,17 @@ ranh giới core → pack.
 ```csharp
 public interface IContentAssetLoader
 {
-    bool TryLoad<T>(string address, out T asset) where T : UnityEngine.Object;
+    // null = không có. KHÔNG BAO GIỜ throw, TRỪ khi bị huỷ.
+    UniTask<T> TryLoadAsync<T>(string address, CancellationToken ct = default) where T : UnityEngine.Object;
+    UniTask UnloadAsync(string address, CancellationToken ct = default);
 }
 ```
+
+> **SỬA 2026-09-20 — chữ ký là ASYNC.** Bản đầu viết `bool TryLoad<T>(..., out T)` đồng bộ. Đồng bộ chỉ
+> đúng với Resources; dưới Addressables (Phase 2) nó là **lời nói dối**, và sửa về sau là đổi một API
+> công khai cho mọi call site. Kèm theo: huỷ (`OperationCanceledException`) **phải bay lên**, không được
+> nuốt thành `null` — một màn hình đóng giữa chừng mà bị báo "thiếu asset" sẽ đi vẽ placeholder lên
+> một view đã chết. Có `UnloadAsync` vì không có thì mọi asset nạp qua đây rò vĩnh viễn dưới Addressables.
 
 Miss → `false` → call site dùng placeholder từ `ContentFallbacks`. Pack có definition nhưng thiếu art render
 ô **"?"**, không throw.

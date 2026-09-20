@@ -72,7 +72,22 @@ Kèm theo: `AddressablesUILoader` còn **3 lỗ chưa đóng** (xem memory `addr
 và define `ADDRESSABLES` đã bị bỏ ở commit `d87eceb`. Phase 2 muốn tách pack khỏi bytes của build thì phải
 đóng cả ba.
 
-### 1.3 Không có registry định nghĩa nội dung
+### 1.3 Không có registry định nghĩa nội dung — **XONG 2026-09-20, ở GAME**
+
+> **Quyết định: registry viết trong `Assets/UIFramework/Features/AstralChorus/`, KHÔNG đưa vào
+> framework** (user chốt 2026-09-20). Lý do: đúng một consumer thật, mà public API trong một
+> package đã publish thì khoá vĩnh viễn — sai hình dạng là phải bump major. Ở tầng game thì
+> promote lên framework chỉ là đổi namespace. **Mốc promote: khi game THỨ HAI thật sự cần**
+> (ColorStackSort gói level, AircraftStriker định nghĩa wave), không phải khi "trông có vẻ generic".
+>
+> Đã có: `ContentId` · `ContentDefinition` · `ContentPackManifest` · `ContentBuildProfile` ·
+> `IContentRegistry` + `ContentRegistry` · `ContentPackLoader` · `IContentAssetLoader` +
+> `ContentAssetLoader` · `AstralChorusLifetimeScope` · validator Editor rule 1–4. 58 test EditMode.
+> Sprint này cũng dựng assembly runtime đầu tiên của AstralChorus — trước đó chỉ có `.Logic`.
+>
+> **Validator rule 5 (ledger chặn tái dùng `entityId`) bị CẮT** (user chốt): ít generic nhất, false
+> positive bắt buộc người xác nhận, và hiện có 0 definition để mà tái dùng ID. Mở lại khi có content thật.
+
 
 Framework **không có gì** cho: kiểu definition nền, manifest của pack, phân giải `packId:entityId`, kiểm
 thiếu phụ thuộc, và hợp đồng *tắt-pack-không-vỡ-save*. `UIViewRegistry` chỉ quản khoá **view**, không phải
@@ -176,7 +191,7 @@ Sắp theo **cái gì chặn cái gì**, không theo độ khó.
 | 1 | **§2.3 mẫu asmdef `Logic`** | Rẻ nhất, mở khoá sim kinh tế — mà sim là việc đầu tiên của Phase 1 |
 | 2 | **§1.2 `IUILoader`** | **Breaking change**. Làm càng muộn càng đắt. Chặn §1.3 |
 | 3 | **§1.4 autosave + hook vòng đời** | Red zone (persistence). Không có nó thì mọi playtest đều mất dữ liệu |
-| 4 | **§1.3 registry nội dung** | Chặn toàn bộ việc tạo nội dung |
+| 4 | ~~**§1.3 registry nội dung**~~ | **XONG 2026-09-20** — ở tầng game, không phải framework |
 | 5 | **§1.1 lưới + filter + snap** | Hạng mục to nhất; bắt đầu sớm nhưng không chặn cái khác |
 | 6 | **§1.5 UX save hỏng** | Nhỏ, nhưng không có thì crash lúc khởi động là hành vi mặc định |
 | 7 | **§1.6 audio**, **§1.7 pool**, **§1.8 hoãn toast** | Độc lập nhau, làm song song được |
@@ -186,8 +201,9 @@ Sắp theo **cái gì chặn cái gì**, không theo độ khó.
 
 ## Câu hỏi chưa giải quyết
 
-1. **§1.2 nới `where T : Component` hay thêm `IAssetLoader` riêng?** Nới thì một interface làm hai việc;
-   tách thì `UIViewFactory` phải biết dùng cái nào. Cần chốt trước khi động vào — đây là public API, red zone.
+1. ~~**§1.2 nới `where T : Component` hay thêm `IAssetLoader` riêng?**~~ **Đã chốt v3.3.0:** thêm
+   `IAssetLoader` riêng, `LoadAssetAsync` (không phải overload — ràng buộc generic không thuộc chữ ký
+   method trong C#). §1.3 là consumer thật đầu tiên của nó.
 2. **§2 có thực sự tách package không?** Nếu giữ trong `com.sinkii09.uiframework` thì mọi project khác
    (AircraftStriker, ColorStackSort, MemoryGame) phải gánh theo engine chiến đấu chúng không dùng.
 3. **§1.1 tự viết hay tìm package có sẵn?** Lưới ảo hoá có filter là bài toán đã được giải nhiều lần.

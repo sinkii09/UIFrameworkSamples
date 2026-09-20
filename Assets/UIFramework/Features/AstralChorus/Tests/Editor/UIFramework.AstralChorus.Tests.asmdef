@@ -3,6 +3,10 @@
     "rootNamespace": "AstralChorus.Tests",
     "references": [
         "UIFramework.AstralChorus.Logic",
+        "UIFramework.AstralChorus",
+        "UIFramework.AstralChorus.Editor",
+        "Sinkii09.UIFramework",
+        "UniTask",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

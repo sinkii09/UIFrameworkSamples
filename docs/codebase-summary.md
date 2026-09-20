@@ -396,6 +396,42 @@ Offline waifu-collection turn-based RPG. **GDD complete 2026-09-19; zero code ex
 
 ## Recent Changes
 
+### 2026-09-20 — AstralChorus content pack registry (in the game, not the framework)
+
+Closes gap §1.3 of `astral-chorus-framework-gaps.md`. Content packs are folders of `.asset` files that
+can be enabled or disabled without touching code and without breaking a save.
+
+**It lives in the game on purpose.** It has exactly one consumer, and a public API inside the published
+`com.sinkii09.uiframework` is permanent — a wrong shape costs a major version. Here, promoting it later
+is a namespace move. Promotion criterion agreed: when a **second** game actually needs it. The framework
+package was not touched this sprint; it only supplies `IAssetLoader`, and this is that interface's first
+real consumer.
+
+New under `Assets/UIFramework/Features/AstralChorus/`:
+
+| Area | What |
+|---|---|
+| Assemblies | `UIFramework.AstralChorus` (runtime — the game's **first**) and `.Editor`; `.Tests` extended |
+| Identity | `ContentId` — `packId:entityId`, split at the first colon, char loop rather than Regex |
+| Data | `ContentDefinition` (abstract SO) · `ContentPackManifest` · `ContentBuildProfile` |
+| Runtime | `IContentRegistry` + `ContentRegistry` (NotStarted/Building/Frozen/Failed) · `ContentPackLoader` · `IContentAssetLoader` + `ContentAssetLoader` |
+| DI | `AstralChorusLifetimeScope : UIFrameworkLifetimeScope` — the game's first scope |
+| Editor | `ContentValidationRules` (pure, testable) + `ContentPackValidator` menu item, rules 1–4 |
+| Tests | 58 EditMode tests |
+
+Reads packs **by key** through `IAssetLoader` rather than scanning a folder, so the same code works
+unchanged when packs move to Addressables. The registry is built once during boot and frozen; every miss
+is a `false` plus one throttled warning, never a throw, so a disabled pack costs zero lines of handling
+at any call site.
+
+Two corrections to `astral-chorus-content-architecture.md` found while building it: the manifest must
+live **inside** its own pack (a shared `Resources/` folder pulls every pack's definitions into the build
+regardless of the profile, defeating the mechanism), and `IContentAssetLoader` is async (a synchronous
+signature is only honest under Resources).
+
+**Not verified: the 58 tests have never run.** The Unity MCP bridge refused connections for the whole
+session, so the work was compile-checked with the dotnet harness instead. Compiling is not passing.
+
 ### 2026-09-20 — UIFramework pinned to v3.3.0 (the data foundation)
 
 `Packages/manifest.json` moved from `#v3.2.0` to `#v3.3.0`. Five capabilities the game needs and
