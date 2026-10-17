@@ -1,5 +1,4 @@
 using R3;
-using DG.Tweening;
 using Sinkii09.UIFramework;
 using TMPro;
 using UnityEngine;
@@ -12,12 +11,14 @@ namespace AircraftStriker
     {
         public override UILayer Layer => UILayer.HUD;
 
-        [SerializeField] private TMP_Text  _scoreLabel;
+        // RollingNumberLabel owns _scoreLabel's text — never BindToText the label as well.
+        [SerializeField] private RollingNumberLabel _scoreRoller;
         [SerializeField] private TMP_Text  _comboLabel;
         [SerializeField] private TMP_Text  _waveLabel;
         [SerializeField] private Image[]   _healthIcons;
         [SerializeField] private Image[]   _shieldIcons;
         [SerializeField] private Image     _grazeMeterFill;
+        [SerializeField] private PunchFeedback _grazeMeterPunch;
         [SerializeField] private TMP_Text  _grazeCountLabel;
         [SerializeField] private Button    _pauseButton;
         [SerializeField] private GameObject _bossWarning;
@@ -27,7 +28,7 @@ namespace AircraftStriker
 
         protected override void BindViewModel(AircraftHUDViewModel vm)
         {
-            vm.Score.BindToText(_scoreLabel, v => $"{v:N0}").AddTo(ref _showDisposables);
+            vm.Score.Subscribe(v => _scoreRoller.SetValue(v)).AddTo(ref _showDisposables);
             vm.Combo.BindToText(_comboLabel, v => v > 1 ? $"x{v}" : string.Empty).AddTo(ref _showDisposables);
             vm.WaveNumber.BindToText(_waveLabel, v => $"Wave {v}").AddTo(ref _showDisposables);
             vm.IsBossWave.BindToActive(_bossWarning).AddTo(ref _showDisposables);
@@ -37,13 +38,11 @@ namespace AircraftStriker
                 {
                     _grazeMeterFill.fillAmount = v / 100f;
 
-                    // Punch scale on every graze increment; big punch when meter resets after full.
+                    // Punch on every graze increment; ~3x punch when the meter resets after full.
+                    // PunchFeedback restores to its captured base scale — the old bare DOKill could
+                    // leave the fill stuck mid-punch when a new graze landed during the previous one.
                     bool fullReset = _prevGrazeMeter >= 95f && v < 5f;
-                    float punchSize = fullReset ? 0.35f : 0.12f;
-                    _grazeMeterFill.transform.DOKill();
-                    _grazeMeterFill.transform
-                        .DOPunchScale(Vector3.one * punchSize, fullReset ? 0.35f : 0.18f, 1, 0.5f)
-                        .SetLink(gameObject);
+                    _grazeMeterPunch.PunchScale(fullReset ? 3f : 1f);
 
                     _prevGrazeMeter = v;
                 })
@@ -71,11 +70,6 @@ namespace AircraftStriker
         {
             for (int i = 0; i < _shieldIcons.Length; i++)
                 _shieldIcons[i].enabled = i < count;
-        }
-
-        private void OnDisable()
-        {
-            if (_grazeMeterFill != null) _grazeMeterFill.transform.DOKill();
         }
     }
 }

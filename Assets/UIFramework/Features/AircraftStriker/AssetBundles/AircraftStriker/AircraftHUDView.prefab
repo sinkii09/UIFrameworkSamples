@@ -397,7 +397,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.AircraftHUDView
   _showTransition: {fileID: 0}
   _hideTransition: {fileID: 0}
-  _scoreLabel: {fileID: 9046956969068276754}
+  _scoreRoller: {fileID: 8293199959675902424}
   _comboLabel: {fileID: 8055189411163447470}
   _waveLabel: {fileID: 4928197654952542333}
   _healthIcons:
@@ -408,6 +408,7 @@ MonoBehaviour:
   - {fileID: 5140014566343934987}
   - {fileID: 3750924969681690018}
   _grazeMeterFill: {fileID: 5303990002140624665}
+  _grazeMeterPunch: {fileID: 6308090868254725950}
   _grazeCountLabel: {fileID: 5001635140069476158}
   _pauseButton: {fileID: 6233367414413456171}
   _bossWarning: {fileID: 2033643700226553244}
@@ -422,6 +423,7 @@ GameObject:
   - component: {fileID: 4884457858855910247}
   - component: {fileID: 6514034443483457350}
   - component: {fileID: 5303990002140624665}
+  - component: {fileID: 6308090868254725950}
   m_Layer: 0
   m_Name: GrazeMeterFill
   m_TagString: Untagged
@@ -486,6 +488,26 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &6308090868254725950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3650352424847642778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e0cbdaef9a243cda5e2221a998a4b1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.PunchFeedback
+  _target: {fileID: 0}
+  _graphic: {fileID: 0}
+  _punchAmount: 0.12
+  _punchDuration: 0.2
+  _vibrato: 6
+  _elasticity: 0.6
+  _flashDuration: 0.12
+  _useUnscaledTime: 1
 --- !u!1 &3881242024235427900
 GameObject:
   m_ObjectHideFlags: 0
@@ -1254,6 +1276,7 @@ GameObject:
   - component: {fileID: 8401872500470619289}
   - component: {fileID: 4821035936873675005}
   - component: {fileID: 9046956969068276754}
+  - component: {fileID: 8293199959675902424}
   m_Layer: 0
   m_Name: ScoreLabel
   m_TagString: Untagged
@@ -1380,3 +1403,21 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &8293199959675902424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8269695871089611503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84a235881d5e47bd9b2ed653b79d98c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.RollingNumberLabel
+  _label: {fileID: 0}
+  _format: N0
+  _minDuration: 0.15
+  _maxDuration: 0.8
+  _useUnscaledTime: 1
+  _pulseOnIncrease: {fileID: 0}

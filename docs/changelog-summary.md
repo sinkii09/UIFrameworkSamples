@@ -8,6 +8,26 @@ Split out of [`codebase-summary.md`](codebase-summary.md) on 2026-09-20. That fi
 *"what is this project right now"* was buried under months of history. **That file describes the
 current state; this one records how it got there.**
 
+### 2026-10-15 — UIFramework v3.5.0 juice toolkit + AircraftStriker demo
+
+New framework building blocks in `Runtime/Juice/` (`PressScaleFeedback`, `PunchFeedback`,
+`RollingNumberLabel`, `JuiceSequences`) plus `PopTransition`. Juice previously lived only in game code
+(ColorStackSort `ButtonPressPunch`/`TubeFeedback`, AircraftStriker inline tweens). 21 new PlayMode
+tests; framework suite 426/426.
+
+Demo in AircraftStriker (HUD score roll, pause press feedback + pop transition). Also a **bug fix**:
+the HUD graze meter used a bare `DOKill` + `DOPunchScale` with no captured base, so a graze landing
+mid-punch could strand the fill at its interrupted scale — now `PunchFeedback`. (Low visible impact:
+`GrazeMeterFill` is inactive in the prefab, which predates this change.)
+
+Caught at review gates, not by tests: plan review — the PopTransition alpha contract (a scale-only pop
+plays invisible because the animator leaves alpha at 0 after a hide) and the HUD punch target; diff
+review — a component called before `Awake` silently dropped its value. Live QA found an apparent
+"no roll" that was a 1.16 s Editor stall from the MCP call itself; a mid-roll test now pins the
+intermediate state.
+
+`Packages/manifest.json` points at the local framework checkout until v3.5.0 is tagged and repinned.
+
 ### 2026-09-20 — AstralChorus content pack registry (in the game, not the framework)
 
 Closes gap §1.3 of `astral-chorus-framework-gaps.md`. Content packs are folders of `.asset` files that

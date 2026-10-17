@@ -286,6 +286,7 @@ GameObject:
   - component: {fileID: 4768193220285388528}
   - component: {fileID: 8925612476778927387}
   - component: {fileID: 6597231960097157332}
+  - component: {fileID: 2476427614437377700}
   m_Layer: 0
   m_Name: MenuButton
   m_TagString: Untagged
@@ -395,6 +396,24 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2476427614437377700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3324714522388720745}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0027953c760b4562a135b9b8d8a7055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.PressScaleFeedback
+  _target: {fileID: 0}
+  _selectable: {fileID: 0}
+  _pressedScale: 0.92
+  _pressDuration: 0.08
+  _releaseDuration: 0.25
+  _releaseOvershoot: 3
 --- !u!1 &5462410813406845117
 GameObject:
   m_ObjectHideFlags: 0
@@ -544,6 +563,7 @@ GameObject:
   - component: {fileID: 8300188047943101084}
   - component: {fileID: 8026015529110168797}
   - component: {fileID: 7794488805103620822}
+  - component: {fileID: 2982055556061688623}
   m_Layer: 0
   m_Name: ResumeButton
   m_TagString: Untagged
@@ -653,6 +673,24 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2982055556061688623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5896422743775946704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0027953c760b4562a135b9b8d8a7055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.PressScaleFeedback
+  _target: {fileID: 0}
+  _selectable: {fileID: 0}
+  _pressedScale: 0.92
+  _pressDuration: 0.08
+  _releaseDuration: 0.25
+  _releaseOvershoot: 3
 --- !u!1 &6378430484923399833
 GameObject:
   m_ObjectHideFlags: 0
@@ -717,7 +755,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c90c946863b45447b06c117a117c10c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UIFramework.AircraftStriker::AircraftStriker.AircraftPauseView
-  _showTransition: {fileID: 0}
+  _showTransition: {fileID: 11400000, guid: ee2857ad5536de34b8af8d3210c17f5e, type: 2}
   _hideTransition: {fileID: 0}
   _resumeButton: {fileID: 7794488805103620822}
   _restartButton: {fileID: 3257032189593214451}
@@ -734,6 +772,7 @@ GameObject:
   - component: {fileID: 7657284205532943990}
   - component: {fileID: 5859199624638070088}
   - component: {fileID: 3257032189593214451}
+  - component: {fileID: 4841923238300468945}
   m_Layer: 0
   m_Name: RestartButton
   m_TagString: Untagged
@@ -843,3 +882,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4841923238300468945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7723720710427154917}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0027953c760b4562a135b9b8d8a7055a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.PressScaleFeedback
+  _target: {fileID: 0}
+  _selectable: {fileID: 0}
+  _pressedScale: 0.92
+  _pressDuration: 0.08
+  _releaseDuration: 0.25
+  _releaseOvershoot: 3

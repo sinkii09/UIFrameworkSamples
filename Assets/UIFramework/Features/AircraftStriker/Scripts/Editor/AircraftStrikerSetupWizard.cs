@@ -5,6 +5,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using Sinkii09.UIFramework;
 using Object = UnityEngine.Object;
 
 namespace AircraftStriker.Editor
@@ -23,6 +24,7 @@ namespace AircraftStriker.Editor
         const string SOEnemies   = "Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/Enemies";
         const string SOWaves     = "Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/Waves";
         const string SOShop      = "Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/Shop";
+        const string SOTransitions = "Assets/UIFramework/Features/AircraftStriker/ScriptableObjects/Transitions";
         const string PrefPlayer  = "Assets/UIFramework/Features/AircraftStriker/Prefabs/Player";
         const string PrefEnemies = "Assets/UIFramework/Features/AircraftStriker/Prefabs/Enemies";
         const string PrefBullets = "Assets/UIFramework/Features/AircraftStriker/Prefabs/Projectiles";
@@ -77,7 +79,7 @@ namespace AircraftStriker.Editor
         {
             foreach (var path in new[]
             {
-                SOBullets, SOPatterns, SOEnemies, SOWaves, SOShop,
+                SOBullets, SOPatterns, SOEnemies, SOWaves, SOShop, SOTransitions,
                 PrefPlayer, PrefEnemies, PrefBullets, PrefPickups, PrefVFX, PrefSystems,
                 ViewsRoot
             })
@@ -713,8 +715,13 @@ namespace AircraftStriker.Editor
                 sIcons[0].color = Color.cyan;
                 sIcons[1].color = Color.cyan;
 
+                // Juice: the score rolls instead of jumping; the graze meter punches on each graze.
+                var scoreRoller = scoreL.gameObject.AddComponent<RollingNumberLabel>();
+                var grazePunch  = grazeFill.gameObject.AddComponent<PunchFeedback>();
+
                 var so = new SerializedObject(root.GetComponent<AircraftHUDView>());
-                so.FindProperty("_scoreLabel").objectReferenceValue     = scoreL;
+                so.FindProperty("_scoreRoller").objectReferenceValue    = scoreRoller;
+                so.FindProperty("_grazeMeterPunch").objectReferenceValue = grazePunch;
                 so.FindProperty("_comboLabel").objectReferenceValue     = comboL;
                 so.FindProperty("_waveLabel").objectReferenceValue      = waveL;
                 so.FindProperty("_grazeMeterFill").objectReferenceValue  = grazeFill;
@@ -744,7 +751,17 @@ namespace AircraftStriker.Editor
                 var restart = MakeBtn(root, "RestartButton", "RESTART", new Vector2(0.2f, 0.39f), new Vector2(0.8f, 0.49f));
                 var menu    = MakeBtn(root, "MenuButton",    "MENU",    new Vector2(0.2f, 0.26f), new Vector2(0.8f, 0.36f));
 
+                // Juice: buttons squash on press (unscaled — this menu runs at timeScale 0) and the
+                // panel pops in with an overshoot.
+                foreach (var btn in new[] { resume, restart, menu })
+                    btn.gameObject.AddComponent<PressScaleFeedback>();
+                // MakeSO resets public fields to defaults on every run — tune the pop in code here,
+                // not in the Inspector, or a wizard re-run silently discards it.
+                var pop = MakeSO<PopTransition>($"{SOTransitions}/PausePopTransition.asset");
+                EditorUtility.SetDirty(pop);
+
                 var so = new SerializedObject(root.GetComponent<AircraftPauseView>());
+                so.FindProperty("_showTransition").objectReferenceValue = pop;
                 so.FindProperty("_resumeButton").objectReferenceValue  = resume;
                 so.FindProperty("_restartButton").objectReferenceValue = restart;
                 so.FindProperty("_menuButton").objectReferenceValue    = menu;
