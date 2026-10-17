@@ -8,6 +8,29 @@ Split out of [`codebase-summary.md`](codebase-summary.md) on 2026-09-20. That fi
 *"what is this project right now"* was buried under months of history. **That file describes the
 current state; this one records how it got there.**
 
+### 2026-10-17 — UIFramework v3.6.0: animation/transition review + fixes
+
+Independent review of the whole animation system (16 mechanisms: 6 `UITransition`s +
+`DOTweenUIAnimator`, Juice, overlay curtain, `TabIndicator`, toast fade). Verdict: design sound, no
+rewrite; fixed in 3 reviewer-gated phases, framework only (no API break):
+- **Bug (high):** Scale/Slide show transitions played **invisible** after any hide — the hide left
+  alpha 0 and neither touches alpha. Root cause: the animator only set alpha *after* the tween. Fix:
+  alpha = 1 before the show tween is built. Hit MemoryGame `SlideInTransition` on every re-show.
+- **Bug (medium):** a `DOKill(transform)` on a view root (juice, `OnDisable` cleanup) cancelled the
+  show and hid the view — bare transition tweens targeted the transform. Fix: `SetTarget(view)`.
+- **Bug (low):** `TabIndicator` froze in pause menus (scaled time); a cancelled hide re-enabled input.
+- Simplification: `UIViewBase.AcceptsInput` replaces 4 duplicated finally-overrides
+  (Tooltip/NotificationHost); animator Show/Hide merged; juice kill+restore in one helper.
+- New: `UIViewBase.PlayOwnedAsync(tween, ct)` for custom choreography; dev warning for Slide on tooltips.
+- TheEnd: MemoryGame `MainMenuView` show sequence was missing `SetLink(gameObject)` — added.
+  The other 12 hand-written `AwaitAsync` sites were deliberately not migrated (user decision).
+- Deferred: Slide relative to the authored position (behaviour change). Not changed: `UIBackdrop`
+  stays instant.
+
+Framework suite: PlayMode 442/442, EditMode 232/232 (+16 tests). Reviewer gates caught 2 tests that
+passed on the old code too (deleted/strengthened), a `PlayOwnedAsync` hang on dead or nested tweens,
+and a static dedupe set that broke its own test with domain reload off.
+
 ### 2026-10-15 — UIFramework v3.5.0 juice toolkit + AircraftStriker demo
 
 New framework building blocks in `Runtime/Juice/` (`PressScaleFeedback`, `PunchFeedback`,

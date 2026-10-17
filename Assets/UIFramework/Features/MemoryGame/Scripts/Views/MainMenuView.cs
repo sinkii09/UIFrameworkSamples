@@ -60,7 +60,8 @@ namespace MemoryGame
 
         protected override async UniTask OnShowAsync(CancellationToken ct)
         {
-            _showSequence = DOTween.Sequence();
+            // SetLink: kill with the view, or a destroyed menu leaves the sequence writing to dead transforms.
+            _showSequence = DOTween.Sequence().SetLink(gameObject);
             _showSequence.Join(_titleText.transform
                 .DOScale(1f, _showDuration)
                 .SetEase(Ease.OutBack));
