@@ -12,7 +12,7 @@ namespace RecyclerShowcase.Editor
     /// </summary>
     internal static class ShowcasePanelBuilder
     {
-        private const float StatusHeight = 56f;
+        private const float StatusHeight = 88f;   // two lines: correctness, then prefetch
 
         internal static ShowcasePanel[] BuildAll(Transform canvas, Button template, RecyclerCell row, RecyclerCell header,
                                                  RecyclerCell picture)
@@ -37,9 +37,9 @@ namespace RecyclerShowcase.Editor
                                                       TextAlignmentOptions.MidlineLeft, Color.white);
 
             RecyclerView view = ShowcaseRecyclerFactory.Build(
-                content, "TopToBottom · 120 px · pictures load in 50–600 ms", Vector2.zero, Vector2.one,
+                content, "TopToBottom · 120 px · loads 50–600 ms · prefetch 600 px", Vector2.zero, Vector2.one,
                 Vector2.zero, new Vector2(0f, -(StatusHeight + 8f)),
-                new RecyclerSpec(ScrollDirection.TopToBottom, 120f, 4f), new[] { picture });
+                new RecyclerSpec(ScrollDirection.TopToBottom, 120f, 4f, prefetchDistance: 600f), new[] { picture });
 
             ShowcaseWiring.Ref(panel, "_list", view);
             ShowcaseWiring.Ref(panel, "_status", status);

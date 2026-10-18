@@ -8,6 +8,30 @@ Split out of [`codebase-summary.md`](codebase-summary.md) on 2026-09-20. That fi
 *"what is this project right now"* was buried under months of history. **That file describes the
 current state; this one records how it got there.**
 
+### 2026-10-18 — UIFramework v3.8.0: RecyclerView prefetch hook; showcase tab 5 prefetch
+
+Package (tag `v3.8.0` = `decf7e0`, pinned in TheEnd; details in its `CHANGELOG.md` and the vault *UI Controls* →
+"Prefetch hook (v3.8.0)"): `SetPrefetchHandler(onPrefetch, onCancelPrefetch)` announces `(first,
+count)` runs within `RecyclerViewSettings.PrefetchDistance` (serialized, default 0 = off) past the
+realized window, in the direction the window last moved; every hint ends in exactly one of {provider
+called, cancelled}. `ScrollVelocity` (signed, + toward later items). Pure band/diff math in
+`PrefetchWindow` (+ `IndexRange`, `PrefetchDiff`). Inspector: the Settings block is grouped under
+`[Header]`s carrying the unit/rule, tooltips rewritten (an inline-caption drawer was built first and
+rejected by the user as too wordy — see memory). Tests:
+EditMode 232 → **265**, PlayMode 475 → **500**. Plan: 2 Opus plan reviews; diff review found the
+package runtime clean (all 7 invariant claims held).
+
+TheEnd showcase tab 5: "Prefetch on/off" button, placeholder counter, `v` readout; QA 54 → **66**
+checks, all green — with prefetch on a 3-row step adds 0 placeholders, without it +3.
+- **Bug (CRITICAL, showcase only, caught in diff review):** the shared prefetch load was a
+  `.Preserve()`d `UniTask`. `Preserve` memoizes only AFTER completion; while the load runs it forwards
+  `OnCompleted` to a source that holds ONE continuation, so a row re-bound mid-load (RefreshAll,
+  "Append 1", scroll back) threw `InvalidOperationException` and stayed on the placeholder. A recycled
+  cell's `AttachExternalCancellation` also keeps its slot. Fix: `UniTaskCompletionSource<Color>` (any
+  number of waiters). New QA step reproduced it on the old loader (6/7 rows) before the fix (7/7).
+- QA tooling: `qa-all.sh` now exits Play mode first — a Play session left running had inverted its
+  enter/exit toggle and `Run` executed in Edit mode (0/0 rows).
+
 ### 2026-10-18 — UIFramework v3.7.0: RecyclerView hardening + async cells; showcase tab 5
 
 Started as a question about "recycled cell shows the previous item's picture" in another project.

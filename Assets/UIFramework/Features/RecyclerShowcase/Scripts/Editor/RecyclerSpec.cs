@@ -10,15 +10,17 @@ namespace RecyclerShowcase.Editor
         public readonly float Spacing;
         public readonly int CrossAxisCount;
         public readonly float CrossSpacing;
+        public readonly float PrefetchDistance;
 
         public RecyclerSpec(ScrollDirection direction, float cellSize, float spacing,
-                            int crossAxisCount = 1, float crossSpacing = 0f)
+                            int crossAxisCount = 1, float crossSpacing = 0f, float prefetchDistance = 0f)
         {
             Direction = direction;
             CellSize = cellSize;
             Spacing = spacing;
             CrossAxisCount = crossAxisCount;
             CrossSpacing = crossSpacing;
+            PrefetchDistance = prefetchDistance;
         }
     }
 }

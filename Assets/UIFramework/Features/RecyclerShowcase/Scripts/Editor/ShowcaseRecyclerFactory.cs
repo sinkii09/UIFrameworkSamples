@@ -46,6 +46,7 @@ namespace RecyclerShowcase.Editor
                 ShowcaseWiring.Prop(s, "_settings._spacing").floatValue = spec.Spacing;
                 ShowcaseWiring.Prop(s, "_settings._crossAxisCount").intValue = spec.CrossAxisCount;
                 ShowcaseWiring.Prop(s, "_settings._crossSpacing").floatValue = spec.CrossSpacing;
+                ShowcaseWiring.Prop(s, "_settings._prefetchDistance").floatValue = spec.PrefetchDistance;
             });
             ShowcaseWiring.Refs(view, "_cellPrefabs", prefabs);
 

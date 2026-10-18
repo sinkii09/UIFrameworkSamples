@@ -413,7 +413,7 @@ stats line per list (`items | shown [first–last] | instances (active/pooled) |
 | 2 Variable size | `SetItemSizeProvider` (60–260 px rows, 40 px separators), tap-to-expand via `RefreshSizes`, uniform ↔ variable |
 | 3 Grid | `SetCrossAxisCount` 1/2/3/4/6 on a vertical AND a horizontal grid, grid + variable rows, jump to a partial last line |
 | 4 Directions | all four `ScrollDirection`s side by side + `ScrollToIndex` on each |
-| 5 Async | async cell content (v3.7.0): pictures load in 50–600 ms out of order (`FakePictureLoader`); **Naive** bind reproduces the stale/wrong-picture bug, **Correct** bind (placeholder + `RecyclerCell.BindCancellationToken` + sync cache) never shows a wrong picture — live "wrong now / worst" counter; "Provider throws once" proves a failing bind leaks no cell |
+| 5 Async | async cell content (v3.7.0): pictures load in 50–600 ms out of order (`FakePictureLoader`); **Naive** bind reproduces the stale/wrong-picture bug, **Correct** bind (placeholder + `RecyclerCell.BindCancellationToken` + sync cache) never shows a wrong picture — live "wrong now / worst" counter; "Provider throws once" proves a failing bind leaks no cell. **Prefetch on/off** (v3.8.0, starts OFF): the list announces ~5 rows (600 px, serialized) past the realized cells via `SetPrefetchHandler` → `PicturePrefetcher` → `FakePictureLoader.Prefetch` (one shared load per key, claimed by the bind, cancelled only while unclaimed); status shows `placeholders` (cache misses at bind), `hinted`, and `v` = `ScrollVelocity` |
 
 - **Plain MonoBehaviour consumer, no DI/navigator** — `RecyclerView` is a `UIControlBase` and needs
   neither, so the scene isolates the control. Panels init lazily on first tab open (activation runs
@@ -425,9 +425,14 @@ stats line per list (`items | shown [first–last] | instances (active/pooled) |
 - Asmdefs: `UIFramework.RecyclerShowcase` (refs UIFramework, TextMeshPro, **UniTask**) + `.Editor`
   (refs `Unity.InputSystem` for the `InputSystemUIInputModule`).
 - QA: `plans/261017-2110-recycler-view-showcase/showcase-play-mode-qa.cs.txt` — three
-  `script-execute` calls in Play mode, seconds apart: `Run`, `RunAsync`, `RunInput` (54 checks).
+  `script-execute` calls in Play mode, seconds apart: `Run`, `RunAsync`, `RunInput` (66 checks).
   The project's `runInBackground` is false, so an unfocused Editor stops at frame 2 — set
-  `Application.runInBackground = true` for the session before running it.
+  `Application.runInBackground = true` for the session before running it. Start from Edit mode: a
+  Play session already running inverts the enter/exit toggle and `Run` executes outside Play mode.
+- Tab 5 loader files: `FakePictureLoader.cs` (cache + shared prefetch loads backed by a
+  `UniTaskCompletionSource` — NOT `.Preserve()`, see changelog 2026-10-18), `PicturePrefetcher.cs`
+  (view hints → loader), `AsyncPicturesShowcase.cs` + `.Loading.cs` (Naive/Correct bind paths).
+- Needs UIFramework ≥ v3.8.0 (the prefetch hook); TheEnd pins `#v3.8.0`.
 
 ---
 
