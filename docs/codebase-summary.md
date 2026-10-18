@@ -1,11 +1,11 @@
 # Codebase Summary
 
 ## Project Overview
-Unity 6 project built around the Sinkii09 UIFramework package (MVVM + DI + R3 + UniTask), consumed as a pinned git dependency from its own repository. Four games share it and double as its proving ground, each under `Assets/UIFramework/Features/<Game>/`: **Memory Flip Card** (complete and playable — sound, animations, win detection), **Aircraft Striker 2D**, **Color Stack Sort**, and **AstralChorus** (in progress; content and economy layers exist, no gameplay yet).
+Unity 6 project built around the Sinkii09 UIFramework package (MVVM + DI + R3 + UniTask), consumed as a pinned git dependency from its own repository. A `RecyclerShowcase` verification scene sits beside the games (see its section). Four games share it and double as its proving ground, each under `Assets/UIFramework/Features/<Game>/`: **Memory Flip Card** (complete and playable — sound, animations, win detection), **Aircraft Striker 2D**, **Color Stack Sort**, and **AstralChorus** (in progress; content and economy layers exist, no gameplay yet).
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.3.0` as of 2026-09-20:
-  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.3.0"`.
+- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.7.0` as of 2026-10-18:
+  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.7.0"`.
   Re-pin with the `package-add` tool, never by hand-editing this file or `manifest.json` — the
   lock file has to move with it.
   For most of 2026-08-01/02 this was instead a local path dependency
@@ -398,6 +398,36 @@ the content pack registry plus the game's first runtime assembly and LifetimeSco
   defects in the first draft.
 
 **GildedLedger is deprioritized** — its GDD is kept as reference, implementation is not planned.
+
+---
+
+## RecyclerView Showcase (`Assets/UIFramework/Features/RecyclerShowcase/`) — verification scene, not a game
+
+One scene that exercises every RecyclerView feature live, with on-screen "what to check" hints and a
+stats line per list (`items | shown [first–last] | instances (active/pooled) | cols`). Open
+`Scenes/RecyclerShowcase.unity` → Play → tabs:
+
+| Tab | Proves |
+|---|---|
+| 1 List 100k | virtualization (instances flat), 2 prefab ids, `ScrollToIndex` alignment, `RefreshIndex` cross-pool rebind ("Flip a visible type"), `SetItemCount` ±1000 |
+| 2 Variable size | `SetItemSizeProvider` (60–260 px rows, 40 px separators), tap-to-expand via `RefreshSizes`, uniform ↔ variable |
+| 3 Grid | `SetCrossAxisCount` 1/2/3/4/6 on a vertical AND a horizontal grid, grid + variable rows, jump to a partial last line |
+| 4 Directions | all four `ScrollDirection`s side by side + `ScrollToIndex` on each |
+| 5 Async | async cell content (v3.7.0): pictures load in 50–600 ms out of order (`FakePictureLoader`); **Naive** bind reproduces the stale/wrong-picture bug, **Correct** bind (placeholder + `RecyclerCell.BindCancellationToken` + sync cache) never shows a wrong picture — live "wrong now / worst" counter; "Provider throws once" proves a failing bind leaks no cell |
+
+- **Plain MonoBehaviour consumer, no DI/navigator** — `RecyclerView` is a `UIControlBase` and needs
+  neither, so the scene isolates the control. Panels init lazily on first tab open (activation runs
+  the views' `Awake`, then `Initialize`).
+- **Generated, do not hand-edit:** `Tools/Recycler Showcase/Build Scene` (`Scripts/Editor/`) rebuilds
+  the three cell prefabs (row, header, `AsyncPictureCell`) and the scene every run. Refuses if any
+  loaded scene is dirty or Play mode is on.
+- Portrait 1080×1920 CanvasScaler; toolbar wraps, so landscape also works (fewer rows per tab).
+- Asmdefs: `UIFramework.RecyclerShowcase` (refs UIFramework, TextMeshPro, **UniTask**) + `.Editor`
+  (refs `Unity.InputSystem` for the `InputSystemUIInputModule`).
+- QA: `plans/261017-2110-recycler-view-showcase/showcase-play-mode-qa.cs.txt` — three
+  `script-execute` calls in Play mode, seconds apart: `Run`, `RunAsync`, `RunInput` (54 checks).
+  The project's `runInBackground` is false, so an unfocused Editor stops at frame 2 — set
+  `Application.runInBackground = true` for the session before running it.
 
 ---
 

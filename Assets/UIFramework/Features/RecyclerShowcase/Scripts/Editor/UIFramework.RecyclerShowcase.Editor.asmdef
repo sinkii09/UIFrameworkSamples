@@ -1,0 +1,21 @@
+{
+    "name": "UIFramework.RecyclerShowcase.Editor",
+    "rootNamespace": "RecyclerShowcase.Editor",
+    "references": [
+        "UIFramework.RecyclerShowcase",
+        "Sinkii09.UIFramework",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
