@@ -75,7 +75,7 @@
       "url": "https://package.openupm.com"
     },
     "com.sinkii09.uiframework": {
-      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.7.0",
+      "version": "https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.8.0",
       "depth": 0,
       "source": "git",
       "dependencies": {
@@ -83,7 +83,7 @@
         "com.unity.inputsystem": "1.19.0",
         "com.unity.nuget.newtonsoft-json": "3.2.2"
       },
-      "hash": "f4334da596e5d076e6d8624581156ed2218f2e08"
+      "hash": "decf7e0f2da868be935095c83a06410021713aa1"
     },
     "com.unity.2d.animation": {
       "version": "14.0.3",
