@@ -185,6 +185,7 @@ GameObject:
   - component: {fileID: 286848732}
   - component: {fileID: 286848734}
   - component: {fileID: 286848733}
+  - component: {fileID: 286848735}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -223,7 +224,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 88d7bd6d57faab0419c432d396cb3b85, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -249,6 +250,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 286848731}
   m_CullTransparentMesh: 1
+--- !u!114 &286848735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 286848731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ceeb75d90df26741b9d9a7f597d3e75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UIFramework.PatternWipe::PatternWipe.PatternWipeSurface
 --- !u!1 &392567455
 GameObject:
   m_ObjectHideFlags: 0
@@ -606,8 +619,11 @@ MonoBehaviour:
     HUD: {fileID: 392567456}
     Screen: {fileID: 1916794862}
     Popup: {fileID: 2007668229}
+    Tooltip: {fileID: 0}
+    Notification: {fileID: 0}
     Overlay: {fileID: 2124332887}
     Debug: {fileID: 1573326699}
+  _viewPolicies: {fileID: 0}
 --- !u!114 &1123194278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1134,9 +1150,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9fa7cad553deae479aed7723588944f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Sinkii09.UIFramework::Sinkii09.UIFramework.TransitionOverlayView
-  _showTransition: {fileID: 11400000, guid: 762e594dd38e2a940bcf7b1b49ae2109, type: 2}
-  _hideTransition: {fileID: 11400000, guid: 762e594dd38e2a940bcf7b1b49ae2109, type: 2}
-  _minDisplaySeconds: 0.3
+  _showTransition: {fileID: 11400000, guid: 22e7de8083143314abcac1efc4353cdf, type: 2}
+  _hideTransition: {fileID: 11400000, guid: 09f6ffcc0e2dedb46964f77052ecbf39, type: 2}
+  _minDisplaySeconds: 0.9
 --- !u!225 &1893384517
 CanvasGroup:
   m_ObjectHideFlags: 0

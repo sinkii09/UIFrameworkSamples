@@ -432,7 +432,41 @@ stats line per list (`items | shown [first–last] | instances (active/pooled) |
 - Tab 5 loader files: `FakePictureLoader.cs` (cache + shared prefetch loads backed by a
   `UniTaskCompletionSource` — NOT `.Preserve()`, see changelog 2026-10-18), `PicturePrefetcher.cs`
   (view hints → loader), `AsyncPicturesShowcase.cs` + `.Loading.cs` (Naive/Correct bind paths).
-- Needs UIFramework ≥ v3.8.0 (the prefetch hook); TheEnd pins `#v3.8.0`.
+- Needs UIFramework ≥ v3.8.0 (the prefetch hook). TheEnd pins `#v3.9.0`.
+
+## Shine Reveal — now the UIFramework sample "Shine Reveal" (v3.9.0); no copy in TheEnd
+
+A **shine sweep + flash** ("glint"): a diagonal white line crosses the item while the item blinks at the
+centre. Built here on 2026-10-18 and moved into the package on 2026-10-19:
+- the player `ShineRevealPlayer` became `Sinkii09.UIFramework.OneShotAnimator` (`Runtime/Juice`), with the
+  same GUID, so references kept working;
+- the clip (0.417 s), controller, prefab and demo scene became `Samples~/ShineReveal` (Feel art swapped for
+  Unity's built-in `UISprite`; requires Coffee.UIEffect).
+
+To use it here: Package Manager → Sinkii09 UI Framework → Samples → Shine Reveal → Import. Details: vault
+`Shine Reveal.md` and `Juice & Feedback.md`.
+
+## Pattern Wipe — package feature (v3.9.0); TheEnd owns only its presets
+
+A diagonal **tile wipe** for the resident `TransitionOverlayView`: on show, tiles grow while a band
+sweeps corner to corner until the screen is covered; on hide they shrink. Used by AircraftStriker
+(`AS_Bootstrap` → `TransitionOverlay`) for every `GameLifecycleManager` state/scene change. Any code can
+also inject `ITransitionOverlay` and call `ShowAsync`/`HideAsync` around a heavy load.
+
+- **Package** (`Runtime/Core/Animation/PatternWipe/`, namespace `Sinkii09.UIFramework`):
+  `PatternWipeTransition`, `PatternWipeSurface`, shader `UIFramework/UI/Pattern Wipe`, 5 pattern textures
+  (from Coffee.UIEffect, MIT). These moved from TheEnd with their GUIDs.
+- **TheEnd** (`Assets/UIFramework/Features/PatternWipe/`): only the game's presets.
+  - `Materials/PatternWipe.mat`: Diamond, Rows 12, GridRotation 45, Angle 315, Spread 0.5, Softness 0.03.
+  - `Transitions/PatternWipeCover.asset` (Show) and `PatternWipeReveal.asset` (Hide): 0.6 s, InOutSine.
+- **AircraftStriker overlay:** `_minDisplaySeconds` 0.9. The overlay's `Background` Image keeps the loading
+  art sprite and carries the material + `PatternWipeSurface`.
+- **Known, open (next patch after 3.9.0):** the overlay is saved **inactive** in `AS_Bootstrap` (since
+  `2097be8`), so the FIRST transition of each Play session shows no curtain — see changelog 2026-10-19 and
+  vault Known Gotchas.
+- **Cosmetic:** a 1-px seam on the Diamond tile row crossing 0.5. Fix with `_Angle` ~300–305 or `_Softness` ~0.05.
+- Setup/probes (history): `plans/261018-1912-pattern-wipe-transition-overlay/scripts/`. Move plan:
+  `plans/261018-2343-pattern-wipe-and-one-shot-animator-into-package/`.
 
 ---
 
