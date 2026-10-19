@@ -16,14 +16,11 @@ namespace AircraftStriker
         public string SceneName    => null;
         public bool PausesGameTime => false;
 
+        // No CloseAllAsync here: UINavigator.ChangeStateAsync clears the stack before entering a state,
+        // and a CloseAllAsync issued inside that transition is refused with a warning anyway.
         public async UniTask OnEnterAsync(CancellationToken ct = default)
-        {
-            await _navigator.CloseAllAsync(ct);
-            await _navigator.ShowAsync<AircraftMainMenuView>(ct);
-        }
+            => await _navigator.ShowAsync<AircraftMainMenuView>(ct);
 
-        // OnExitAsync of the outgoing state (e.g. AircraftGameplayState) typically calls CloseAllAsync,
-        // but we repeat it here to guard against entry paths where the predecessor does not clean up.
         public UniTask OnExitAsync(CancellationToken ct = default) => UniTask.CompletedTask;
     }
 }

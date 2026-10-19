@@ -9,6 +9,40 @@ Split out of [`codebase-summary.md`](codebase-summary.md) on 2026-09-20. That fi
 current state; this one records how it got there.**
 
 
+### 2026-10-19 — UIFramework v3.9.1 + AircraftStriker boot: two first-Play bugs fixed
+
+**1. Saved-inactive resident views switched themselves off inside their first show.** Package fix.
+- **Symptom:** in AircraftStriker, the first transition of every Play session had no curtain, and nothing
+  was logged. Probe: `overlayActive=False` for the whole wipe.
+- **Root cause:** `TransitionOverlayView`, `NotificationHostView` and `TooltipViewBase` pre-hide with
+  `SetActive(false)` in Awake. A view saved inactive runs Awake inside the `SetActive(true)` that shows it.
+  `AS_Bootstrap` has had the overlay inactive since `2097be8`.
+- **Fix:** `UIViewBase.ActivateForShow()` + `PreHide()`; activating callers write alpha after activation.
+- **Tests:** 3 regression tests, mutation-checked.
+
+**2. Boot rejected on every Play.**
+- **Symptom:** `[GameLifecycleManager] Boot transition was Rejected`, and `CurrentState` was null.
+- **Root cause:** `AircraftGameBootstrap.Initialize` (since `3d61ece`) showed the menu through a raw
+  `_navigator.ShowAsync`, so the navigator was busy when `StartAsync` booted.
+- **Fix:** `EnqueueStateChange<AircraftMainMenuState>()`. The game now opens with the curtain lifting onto
+  the menu (user's choice).
+
+**Follow-ons found while verifying:**
+- **Dead `CloseAllAsync` calls.** Three calls in `AircraftMainMenuState`/`AircraftGameplayState`
+  OnEnter/OnExit were refused inside every state transition, logging
+  `Transitioning — CloseAllAsync ignored`. Removed with no behaviour change: the navigator clears the stack
+  first, and Retry closes all itself.
+- **Dropped Play click.** A Play click during the curtain reveal was dropped by GLM's guard. Fixed: the menu
+  Play button now uses `EnqueueStateChange`.
+- **Clearer boot error.** The package's boot-rejection error now names the likely cause.
+
+**Verified:**
+- EditMode 265/265, PlayMode 544/544.
+- AS_Bootstrap probes: boot lands in `AircraftMainMenuState`, the curtain is visible on the first
+  transition, and a click during the reveal enters gameplay with a clean console.
+
+Plan: `plans/261019-2302-resident-view-first-show-and-boot-state/`.
+
 ### 2026-10-19 — UIFramework v3.9.0: Pattern Wipe + OneShotAnimator moved into the package
 
 **What:** TheEnd's Pattern Wipe and the Shine Reveal player became package features.

@@ -43,7 +43,9 @@ namespace AircraftStriker
                 return;
             }
 
-            await _navigator.CloseAllAsync(ct);
+            // No CloseAllAsync on either side of this state: on ChangeState the navigator has already
+            // cleared the stack (and refuses a nested CloseAllAsync with a warning); on Retry,
+            // GameLifecycleManager.RestartCurrentStateAsync closes everything between exit and enter.
             await _navigator.ShowAsync<AircraftHUDView>(ct);
 
             _playerInstance = Object.Instantiate(_playerShipPrefab);
@@ -72,7 +74,7 @@ namespace AircraftStriker
             _gameplay.StartGame();
         }
 
-        public async UniTask OnExitAsync(CancellationToken ct = default)
+        public UniTask OnExitAsync(CancellationToken ct = default)
         {
             _gameplay.StopGame();
             if (_playerInstance != null)
@@ -81,7 +83,7 @@ namespace AircraftStriker
                 _playerInstance = null;
             }
             _gameplay.SetPlayerTransform(null);
-            await _navigator.CloseAllAsync(ct);
+            return UniTask.CompletedTask;
         }
     }
 }

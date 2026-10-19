@@ -4,8 +4,8 @@
 Unity 6 project built around the Sinkii09 UIFramework package (MVVM + DI + R3 + UniTask), consumed as a pinned git dependency from its own repository. A `RecyclerShowcase` verification scene sits beside the games (see its section). Four games share it and double as its proving ground, each under `Assets/UIFramework/Features/<Game>/`: **Memory Flip Card** (complete and playable — sound, animations, win detection), **Aircraft Striker 2D**, **Color Stack Sort**, and **AstralChorus** (in progress; content and economy layers exist, no gameplay yet).
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.7.0` as of 2026-10-18:
-  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.7.0"`.
+- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.9.1` as of 2026-10-19:
+  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.9.1"`.
   Re-pin with the `package-add` tool, never by hand-editing this file or `manifest.json` — the
   lock file has to move with it.
   For most of 2026-08-01/02 this was instead a local path dependency
@@ -221,6 +221,12 @@ Features/AircraftStriker/
 ```
 
 ### Key Architecture Notes
+- **Boot flow (fixed 2026-10-19):** `AircraftGameBootstrap.Initialize` registers states and views, then
+  calls `EnqueueStateChange<AircraftMainMenuState>()`. GLM boots, then the queue enters the menu as a real
+  state, so the game opens with the pattern-wipe curtain lifting onto the menu.
+  - The menu's Play button also enqueues: the menu is clickable while the curtain lifts, and GLM is
+    still transitioning at that point.
+  - States never call `CloseAllAsync` (the navigator clears the stack first and refuses nested calls).
 - **AircraftHUDChannel** — Singleton bridge solving UIViewFactory child-scope isolation: `GameplayController` writes to channel, `AircraftHUDViewModel` proxies its `ReactiveProperty<T>` fields. Child scope inherits parent singleton so the channel is visible to both sides.
 - **CheckpointManager** — Pure C# state machine. Saves before each boss wave; `RequestRestore()` sets `IsPendingRestore` flag consumed by `GameplayController.StartGame()` on retry.
 - **WaveManager** — MonoBehaviour (needs coroutines). Receives `GameplayController` via `StartWaves(this)` method, not constructor, to break circular DI dependency.
@@ -432,7 +438,7 @@ stats line per list (`items | shown [first–last] | instances (active/pooled) |
 - Tab 5 loader files: `FakePictureLoader.cs` (cache + shared prefetch loads backed by a
   `UniTaskCompletionSource` — NOT `.Preserve()`, see changelog 2026-10-18), `PicturePrefetcher.cs`
   (view hints → loader), `AsyncPicturesShowcase.cs` + `.Loading.cs` (Naive/Correct bind paths).
-- Needs UIFramework ≥ v3.8.0 (the prefetch hook). TheEnd pins `#v3.9.0`.
+- Needs UIFramework ≥ v3.8.0 (the prefetch hook). TheEnd pins `#v3.9.1`.
 
 ## Shine Reveal — now the UIFramework sample "Shine Reveal" (v3.9.0); no copy in TheEnd
 
@@ -461,9 +467,8 @@ also inject `ITransitionOverlay` and call `ShowAsync`/`HideAsync` around a heavy
   - `Transitions/PatternWipeCover.asset` (Show) and `PatternWipeReveal.asset` (Hide): 0.6 s, InOutSine.
 - **AircraftStriker overlay:** `_minDisplaySeconds` 0.9. The overlay's `Background` Image keeps the loading
   art sprite and carries the material + `PatternWipeSurface`.
-- **Known, open (next patch after 3.9.0):** the overlay is saved **inactive** in `AS_Bootstrap` (since
-  `2097be8`), so the FIRST transition of each Play session shows no curtain — see changelog 2026-10-19 and
-  vault Known Gotchas.
+- The overlay is saved **inactive** in `AS_Bootstrap`. That is fine since UIFramework v3.9.1; on v3.9.0 the
+  FIRST transition of each Play session showed no curtain (changelog 2026-10-19).
 - **Cosmetic:** a 1-px seam on the Diamond tile row crossing 0.5. Fix with `_Angle` ~300–305 or `_Softness` ~0.05.
 - Setup/probes (history): `plans/261018-1912-pattern-wipe-transition-overlay/scripts/`. Move plan:
   `plans/261018-2343-pattern-wipe-and-one-shot-animator-into-package/`.

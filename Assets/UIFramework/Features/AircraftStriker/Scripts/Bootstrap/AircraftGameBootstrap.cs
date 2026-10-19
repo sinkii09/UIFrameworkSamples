@@ -1,5 +1,4 @@
 using System;
-using Cysharp.Threading.Tasks;
 using Sinkii09.UIFramework;
 using VContainer;
 using VContainer.Unity;
@@ -47,8 +46,11 @@ namespace AircraftStriker
 
             _navigator.Register<AircraftGameOverView, AircraftGameOverViewModel, GameOverArgs>();
             _navigator.Register<AircraftVictoryView, AircraftVictoryViewModel, VictoryArgs>();
-            _navigator.ShowAsync<AircraftMainMenuView>()
-                .Forget(ex => UnityEngine.Debug.LogError($"[AircraftGameBootstrap] ShowAsync<AircraftMainMenuView> failed: {ex}"));
+
+            // Queued, not a raw navigator show: Initialize runs before GameLifecycleManager.StartAsync,
+            // and a show here would hold the navigator and get the boot transition refused, leaving the
+            // menu outside the state machine. The queue waits for boot, then enters the menu as a state.
+            _lifecycle.EnqueueStateChange<AircraftMainMenuState>();
         }
 
         public void Dispose()

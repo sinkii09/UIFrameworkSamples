@@ -35,7 +35,9 @@ namespace AircraftStriker
         public void OnPlayPressed()
         {
             _sound.PlaySFX(SFXType.UIClick);
-            _lifecycle.ChangeStateAsync<AircraftGameplayState>().Forget();
+            // Queued: the menu is clickable while the curtain lifts, but GameLifecycleManager is still
+            // inside the transition that showed it, and a direct ChangeStateAsync would be dropped.
+            _lifecycle.EnqueueStateChange<AircraftGameplayState>();
         }
 
         public void OnShopPressed()
