@@ -4,8 +4,8 @@
 Unity 6 project built around the Sinkii09 UIFramework package (MVVM + DI + R3 + UniTask), consumed as a pinned git dependency from its own repository. A `RecyclerShowcase` verification scene sits beside the games (see its section). Four games share it and double as its proving ground, each under `Assets/UIFramework/Features/<Game>/`: **Memory Flip Card** (complete and playable — sound, animations, win detection), **Aircraft Striker 2D**, **Color Stack Sort**, and **AstralChorus** (in progress; content and economy layers exist, no gameplay yet).
 
 ## Package Dependencies (`Packages/manifest.json`)
-- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.9.1` as of 2026-10-19:
-  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.9.1"`.
+- **com.sinkii09.uiframework** — **pinned git tag**, `#v3.10.0` as of 2026-10-24:
+  `"https://github.com/sinkii09/com.sinkii09.uiframework.git#v3.10.0"`.
   Re-pin with the `package-add` tool, never by hand-editing this file or `manifest.json` — the
   lock file has to move with it.
   For most of 2026-08-01/02 this was instead a local path dependency
@@ -50,7 +50,7 @@ All CySharp/Hadashikick packages resolve through a single OpenUPM scoped registr
 | `Runtime/Core/MVVM/UIViewBase.cs` | Caches `CanvasGroup`, `RectTransform`; drives show/hide lifecycle |
 | `Runtime/Core/Navigation/UINavigator.cs` | Stack-based screen navigation |
 | `Runtime/Core/Animation/DOTweenUIAnimator.cs` | `IUIAnimator` impl; fade/scale transitions via DOTween. Calls `.SetLink(viewBase.gameObject)` on every tween before awaiting via `TweenExtensions.AwaitAsync`. Private `AwaitTween` removed — single bridge in `TweenExtensions`. |
-| `Runtime/Juice/` (v3.5.0) | Reusable juice: `PressScaleFeedback` (press squash, unscaled), `PunchFeedback` (punch/squash/flash, independent scale+colour channels), `RollingNumberLabel` (TMP number roll, must be the label's only writer), `JuiceSequences` (staggered pop-in, `UniTask`). All restore to a captured base and in `OnDisable`; one scale driver per transform. `PopTransition` (OutBack pop) lives beside the other `UITransition`s. Vault: `Juice & Feedback.md`. |
+| `Runtime/Juice/` (v3.5.0) | Reusable juice: `PressScaleFeedback` (press squash, unscaled), `PunchFeedback` (punch/squash/flash, independent scale+colour channels), `RollingNumberLabel` (TMP number roll, must be the label's only writer), `JuiceSequences` (staggered pop-in, `UniTask`), `TapEffectSpawner` + `TapRipple` (v3.10.0: an effect at every click/tap, one `InputAction` on `<Pointer>/press`, restart = re-enable; one-click setup via `GameObject > UI > UIFramework > Tap Effect`). All restore to a captured base and in `OnDisable`; one scale driver per transform. `PopTransition` (OutBack pop) lives beside the other `UITransition`s. Vault: `Juice & Feedback.md`. |
 | `Runtime/Controls/Collections/RecyclerView.cs` (+ `.Pump`/`.Cells`) | Recycling list — live cell count tracks the viewport, not the item count (10k items ≈ 11 cells). Cell sizes are **declared, never measured**: uniform by default, per-index via `SetItemSizeProvider`. Pure `RecycleWindow` decision function tested in EditMode; integration surface in PlayMode. |
 | `Runtime/Controls/Collections/IItemOffsets.cs` (+ `UniformOffsets`, `PrefixSumOffsets`) | Where each item sits in offset space. Pure, no Unity types. `UniformOffsets` reproduces the pre-variable-size arithmetic exactly and is the regression anchor; `PrefixSumOffsets` carries per-index declared sizes. Spacing is included in offsets, excluded from sizes. |
 | `Runtime/Core/MVVM/UIBindingExtensions.cs` | Extension helpers: `BindToText`, `BindButton`, etc. |
@@ -438,7 +438,7 @@ stats line per list (`items | shown [first–last] | instances (active/pooled) |
 - Tab 5 loader files: `FakePictureLoader.cs` (cache + shared prefetch loads backed by a
   `UniTaskCompletionSource` — NOT `.Preserve()`, see changelog 2026-10-18), `PicturePrefetcher.cs`
   (view hints → loader), `AsyncPicturesShowcase.cs` + `.Loading.cs` (Naive/Correct bind paths).
-- Needs UIFramework ≥ v3.8.0 (the prefetch hook). TheEnd pins `#v3.9.1`.
+- Needs UIFramework ≥ v3.8.0 (the prefetch hook). TheEnd pins `#v3.10.0`.
 
 ## Shine Reveal — now the UIFramework sample "Shine Reveal" (v3.9.0); no copy in TheEnd
 

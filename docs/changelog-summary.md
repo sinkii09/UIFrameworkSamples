@@ -9,6 +9,18 @@ Split out of [`codebase-summary.md`](codebase-summary.md) on 2026-09-20. That fi
 current state; this one records how it got there.**
 
 
+### 2026-10-24 — UIFramework v3.10.0: tap/click effect (framework only)
+
+- **What:** `TapEffectSpawner` + `TapRipple` in `Runtime/Juice`, plus the `GameObject > UI > UIFramework > Tap Effect`
+  menu item. Any project gets a ripple at every click/tap in one click. Not wired into any TheEnd game (user decision).
+- **Why this shape:** KISS rule (memory `kiss-simple-readable-code`). The spawner never knows what the effect is:
+  re-enabling restarts it, so ripples, particles and Animators all work without an interface.
+- **Tests:** 9 new PlayMode tests (incl. 3 through `InputTestFixture`); full package suite 553/553; two mutants
+  (base-scale capture, anchoredPosition) caught.
+- **Gotchas found:** `InputTestFixture.Press(mouse...)` performs on the next frame in PlayMode (touch is immediate).
+  The Unity-MCP `tests-run` tracker wedged after a 5-min timeout ("another run in progress") — ran tests through
+  `TestRunnerApi` via `script-execute` instead; results land in `%USERPROFILE%/AppData/LocalLow/Sinkii09/Flicker/TestResults.xml`.
+
 ### 2026-10-19 — UIFramework v3.9.1 + AircraftStriker boot: two first-Play bugs fixed
 
 **1. Saved-inactive resident views switched themselves off inside their first show.** Package fix.
